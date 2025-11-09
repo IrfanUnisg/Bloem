@@ -1,7 +1,7 @@
 import { ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Header } from "./Header";
-import { Store, MessageSquare, BarChart3 } from "lucide-react";
+import { Store, MessageSquare, BarChart3, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface AdminLayoutProps {
@@ -15,6 +15,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
     { icon: Store, label: "stores", href: "/admin/stores" },
     { icon: MessageSquare, label: "support", href: "/admin/support" },
     { icon: BarChart3, label: "analytics", href: "/admin/analytics" },
+    { icon: User, label: "profile", href: "/admin/profile" },
   ];
 
   return (
@@ -54,7 +55,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
 
       {/* Bottom Navigation - Mobile */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t z-40">
-        <div className="grid grid-cols-3 gap-1 p-2">
+        <div className="grid grid-cols-4 gap-1 p-2">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.href;
