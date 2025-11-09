@@ -49,9 +49,11 @@ export function Header({
               </>}
 
             {variant === "admin" && <>
-                <Button variant="ghost" size="icon">
-                  <User className="h-5 w-5" />
-                </Button>
+                <Link to="/admin/profile">
+                  <Button variant="ghost" size="icon">
+                    <User className="h-5 w-5" />
+                  </Button>
+                </Link>
               </>}
 
             {variant === "store" && <>
@@ -91,7 +93,7 @@ export function Header({
                   </>}
 
                 {variant === "admin" && <>
-                    <Link to="/profile" className="text-sm font-medium text-foreground hover:text-primary transition-colors">
+                    <Link to="/admin/profile" className="text-sm font-medium text-foreground hover:text-primary transition-colors">
                       profile
                     </Link>
                   </>}
