@@ -1,7 +1,7 @@
 ---
 title: Bloem — Product Requirements (Knowledge File)
 version: 1.0
-author: Jan Toullec-Lugert
+author: Irfan
 date: 2025-11-07
 status: Approved for MVP
 tags: [Second-hand, Thrift Shops, Inventory Management, Sustainability, Marketplace, Stripe, QR Codes]
@@ -109,9 +109,13 @@ Thrift shops currently rely on manual inventory methods and have limited digital
 
 ## Design System
 
-- Clean, modern UI emphasizing sustainability and urban fashion aesthetics.  
-- Earth tone color palette with vibrant accents for calls-to-action.  
-- Readable, clear typography (sans-serif).  
+- Background: Use #F7F4F2 (CSS var --background: 30 25% 96%) as the warm, inviting canvas.
+- Accent Hierarchy:
+Primary Purple (#6B22B1) for calls-to-action, primary interactions, and brand moments.
+Light Purple (#B79CED) for secondary actions, hover states, and supporting UI elements.
+Lime Green (#BED35C) for success states, highlights, and accent details.
+Dark Charcoal for all text, ensuring WCAG AA compliant contrast.
+- Card Treatment: White cards (#FFFFFF) on a cream background with soft, subtle shadows to provide depth without harshness.
 - Consistent component library: buttons, forms, modals, lists, QR code display.  
 - Accessibility standards compliance.
 
@@ -120,19 +124,10 @@ Thrift shops currently rely on manual inventory methods and have limited digital
 ## External References
 
 - Stripe API for payment and payout processing.  
-- QR code generation libraries compatible with mobile scanning.  
 - Competitors: Vinted, Depop (differentiated by focus on local, physical try-ons).  
 - Relevant design systems and sustainable fashion branding.
 
 ---
 
-## Web Pages & Routes
-
-| Zone               | Path                     | Description                          | Access               |
-|--------------------|--------------------------|------------------------------------|----------------------|
-| Public             | `/`, `/about`, `/signup` | Landing, How it works, Registration| Everyone             |
-| Seller/Buyer Dash  | `/dashboard`, `/browse`  | Manage listings, browse inventory  | Authenticated Users  |
-| Store Dash         | `/store/inventory`        | Manage and view store items         | Store staff/owners   |
-| Admin Console      | `/admin`                  | Store verification, pricing, support| Bloem Admin team     |
 
 ---

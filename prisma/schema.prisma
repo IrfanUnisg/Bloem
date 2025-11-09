@@ -1,0 +1,333 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ========================================
+// USER MANAGEMENT
+// ========================================
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String
+  phone     String?
+  avatar    String?
+  address   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Size preferences
+  topSize    String?
+  bottomSize String?
+  shoeSize   String?
+
+  // Payment info
+  stripeCustomerId String? @unique
+  bankAccount      String? // IBAN for payouts
+
+  // Relations
+  listedItems  Item[]        @relation("SellerItems")
+  purchases    Order[]       @relation("BuyerOrders")
+  cartItems    CartItem[]
+  payouts      Payout[]      @relation("SellerPayouts")
+  ownedStore   Store?        @relation("StoreOwner")
+  adminProfile Admin?
+  transactions Transaction[]
+
+  @@index([email])
+  @@map("users")
+}
+
+model Store {
+  id          String   @id @default(uuid())
+  name        String
+  email       String   @unique
+  phone       String
+  address     String
+  city        String
+  description String?
+  logo        String?
+  hours       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Business details
+  verified         Boolean @default(false)
+  active           Boolean @default(true)
+  subscriptionTier String  @default("basic") // basic, premium, enterprise
+  commissionRate   Float   @default(0.20) // 20% default
+
+  // Stripe integration
+  stripeAccountId String? @unique
+
+  // Owner relation
+  ownerId String @unique
+  owner   User   @relation("StoreOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+
+  // Relations
+  inventory  Item[]        @relation("StoreInventory")
+  orders     Order[]
+  payouts    Payout[]      @relation("StorePayouts")
+  analytics  Analytics[]
+  staff      StoreStaff[]
+  dropoffs   DropOffSlot[]
+
+  @@index([city])
+  @@index([verified, active])
+  @@map("stores")
+}
+
+model Admin {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      String   @default("SUPPORT") // SUPER, SUPPORT, FINANCE
+  createdAt DateTime @default(now())
+
+  @@map("admins")
+}
+
+model StoreStaff {
+  id        String   @id @default(uuid())
+  storeId   String
+  store     Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  name      String
+  email     String
+  role      String   @default("STAFF") // MANAGER, STAFF
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  @@unique([storeId, email])
+  @@map("store_staff")
+}
+
+// ========================================
+// INVENTORY SYSTEM
+// ========================================
+
+model Item {
+  id          String   @id @default(uuid())
+  title       String
+  description String
+  category    String // Tops, Bottoms, Dresses, Outerwear, Accessories, Shoes
+  brand       String?
+  size        String
+  color       String?
+  condition   String // Like New, Excellent, Good, Fair
+  price       Float
+  images      String[] // Array of image URLs
+  qrCode      String   @unique
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Status tracking
+  status     String    @default("PENDING_DROPOFF") // PENDING_DROPOFF, FOR_SALE, SOLD, REMOVED, RESERVED
+  uploadedAt DateTime  @default(now())
+  listedAt   DateTime?
+  soldAt     DateTime?
+
+  // Ownership
+  isConsignment Boolean @default(true) // true = seller item, false = store-owned
+  hangerFee     Float   @default(2.00) // One-time fee for consignment
+
+  // Relations
+  sellerId String?
+  seller   User?   @relation("SellerItems", fields: [sellerId], references: [id], onDelete: SetNull)
+
+  storeId String
+  store   Store  @relation("StoreInventory", fields: [storeId], references: [id], onDelete: Cascade)
+
+  // Transaction relations
+  orderItem    OrderItem?
+  cartItems    CartItem[]
+  transactions Transaction[]
+
+  @@index([status])
+  @@index([storeId, status])
+  @@index([sellerId])
+  @@index([category])
+  @@index([qrCode])
+  @@map("items")
+}
+
+// ========================================
+// TRANSACTION FLOW
+// ========================================
+
+model Order {
+  id          String   @id @default(uuid())
+  orderNumber String   @unique
+  createdAt   DateTime @default(now())
+  completedAt DateTime?
+
+  // Order details
+  status       String @default("RESERVED") // RESERVED, COMPLETED, CANCELLED
+  pickupMethod String @default("IN_STORE") // IN_STORE, RESERVED
+
+  // Pricing
+  subtotal   Float
+  serviceFee Float @default(0)
+  tax        Float @default(0)
+  total      Float
+
+  // Payment
+  paymentIntentId String? @unique
+  paymentMethod   String? // CASH, CARD, MOBILE
+
+  // Relations
+  buyerId String
+  buyer   User   @relation("BuyerOrders", fields: [buyerId], references: [id], onDelete: Cascade)
+
+  storeId String
+  store   Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  items        OrderItem[]
+  transactions Transaction[]
+
+  @@index([buyerId])
+  @@index([storeId])
+  @@index([status])
+  @@index([orderNumber])
+  @@map("orders")
+}
+
+model OrderItem {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+
+  // Pricing breakdown
+  priceAtPurchase Float
+  sellerPayout    Float // What seller receives
+  storeCommission Float // What store receives
+  platformFee     Float // Bloem platform fee
+
+  // Relations
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  itemId String @unique
+  item   Item   @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@map("order_items")
+}
+
+model Transaction {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+
+  // Transaction details
+  amount          Float
+  sellerEarnings  Float
+  storeCommission Float
+  platformFee     Float
+  status          String   @default("COMPLETED") // PENDING, COMPLETED, CANCELLED
+  completedAt     DateTime?
+
+  // Relations
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  itemId String
+  item   Item   @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  sellerId String
+  seller   User   @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([sellerId])
+  @@index([status])
+  @@map("transactions")
+}
+
+model Payout {
+  id        String   @id @default(uuid())
+  amount    Float
+  currency  String   @default("EUR")
+  status    String   @default("PENDING") // PENDING, PROCESSING, COMPLETED, FAILED
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Stripe details
+  stripeTransferId String?
+  failureReason    String?
+
+  // Relations - either to seller or store
+  sellerId String?
+  seller   User?   @relation("SellerPayouts", fields: [sellerId], references: [id], onDelete: SetNull)
+
+  storeId String?
+  store   Store?  @relation("StorePayouts", fields: [storeId], references: [id], onDelete: SetNull)
+
+  @@index([sellerId, status])
+  @@index([storeId, status])
+  @@map("payouts")
+}
+
+// ========================================
+// SUPPORTING FEATURES
+// ========================================
+
+model CartItem {
+  id        String   @id @default(uuid())
+  addedAt   DateTime @default(now())
+  quantity  Int      @default(1)
+
+  // Relations
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  itemId String
+  item   Item   @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, itemId])
+  @@index([userId])
+  @@map("cart_items")
+}
+
+model Analytics {
+  id   String   @id @default(uuid())
+  date DateTime @default(now())
+
+  // Metrics
+  totalSales     Float
+  itemsSold      Int
+  revenue        Float
+  footfall       Int      @default(0)
+  topCategories  String[] // JSON array
+  averagePrice   Float
+
+  // Relations
+  storeId String
+  store   Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@unique([storeId, date])
+  @@index([storeId])
+  @@map("analytics")
+}
+
+model DropOffSlot {
+  id          String   @id @default(uuid())
+  date        DateTime
+  timeSlot    String // e.g., "10:00-11:00"
+  available   Boolean  @default(true)
+  maxCapacity Int      @default(5)
+  booked      Int      @default(0)
+
+  // Relations
+  storeId String
+  store   Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@unique([storeId, date, timeSlot])
+  @@index([storeId, date])
+  @@map("dropoff_slots")
+}
