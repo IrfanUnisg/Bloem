@@ -35,14 +35,14 @@ serve(async (req) => {
         .from('cart_items')
         .select(`
           *,
-          item:items!cart_items_itemId_fkey(
+          item:items!cart_items_item_id_fkey(
             *,
-            store:stores!items_storeId_fkey(id, name, city, address),
-            seller:users!items_sellerId_fkey(id, name)
+            store:stores!items_store_id_fkey(id, name, city, address),
+            seller:users!items_seller_id_fkey(id, name)
           )
         `)
-        .eq('userId', userId)
-        .order('addedAt', { ascending: false })
+        .eq('user_id', userId)
+        .order('added_at', { ascending: false })
 
       if (error) throw error
 
@@ -83,8 +83,8 @@ serve(async (req) => {
       const { data: existing } = await supabaseClient
         .from('cart_items')
         .select('*')
-        .eq('userId', userId)
-        .eq('itemId', itemId)
+        .eq('user_id', userId)
+        .eq('item_id', itemId)
         .single()
 
       if (existing) {
@@ -95,17 +95,17 @@ serve(async (req) => {
       const { data: cartItem, error } = await supabaseClient
         .from('cart_items')
         .insert({
-          userId,
-          itemId,
+          user_id: userId,
+          item_id: itemId,
           quantity: 1,
-          addedAt: new Date().toISOString(),
+          added_at: new Date().toISOString(),
         })
         .select(`
           *,
-          item:items!cart_items_itemId_fkey(
+          item:items!cart_items_item_id_fkey(
             *,
-            store:stores!items_storeId_fkey(*),
-            seller:users!items_sellerId_fkey(*)
+            store:stores!items_store_id_fkey(*),
+            seller:users!items_seller_id_fkey(*)
           )
         `)
         .single()

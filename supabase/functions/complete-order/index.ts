@@ -54,20 +54,20 @@ serve(async (req) => {
       .from('orders')
       .update({
         status: 'COMPLETED',
-        paymentMethod,
-        completedAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        payment_method: paymentMethod,
+        completed_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       })
       .eq('id', orderId)
 
     // Update all items to SOLD
-    const itemIds = order.items.map((oi: any) => oi.itemId)
+    const itemIds = order.items.map((oi: any) => oi.item_id)
     await supabaseClient
       .from('items')
       .update({
         status: 'SOLD',
-        soldAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        sold_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       })
       .in('id', itemIds)
 
@@ -76,9 +76,9 @@ serve(async (req) => {
       .from('transactions')
       .update({
         status: 'COMPLETED',
-        completedAt: new Date().toISOString(),
+        completed_at: new Date().toISOString(),
       })
-      .eq('orderId', orderId)
+      .eq('order_id', orderId)
 
     // Fetch updated order
     const { data: completedOrder } = await supabaseClient
@@ -89,8 +89,8 @@ serve(async (req) => {
           *,
           item:items(*)
         ),
-        buyer:users!orders_buyerId_fkey(*),
-        store:stores!orders_storeId_fkey(*)
+        buyer:users!orders_buyer_id_fkey(*),
+        store:stores!orders_store_id_fkey(*)
       `)
       .eq('id', orderId)
       .single()

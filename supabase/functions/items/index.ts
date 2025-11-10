@@ -41,17 +41,17 @@ serve(async (req) => {
         .from('items')
         .select(`
           *,
-          seller:users!items_sellerId_fkey(id, name, avatar),
-          store:stores!items_storeId_fkey(id, name, city, address)
+          seller:users!items_seller_id_fkey(id, name, avatar),
+          store:stores!items_store_id_fkey(id, name, city, address)
         `)
         .eq('status', status)
         .range(offset, offset + limit - 1)
-        .order('createdAt', { ascending: false })
+        .order('created_at', { ascending: false })
 
       if (category) query = query.eq('category', category)
       if (size) query = query.eq('size', size)
       if (condition) query = query.eq('condition', condition)
-      if (storeId) query = query.eq('storeId', storeId)
+      if (storeId) query = query.eq('store_id', storeId)
       if (minPrice) query = query.gte('price', parseFloat(minPrice))
       if (maxPrice) query = query.lte('price', parseFloat(maxPrice))
 
@@ -77,10 +77,10 @@ serve(async (req) => {
         condition,
         price,
         images,
-        storeId,
-        sellerId,
-        isConsignment = true,
-        hangerFee = 2.0,
+        store_id,
+        seller_id,
+        is_consignment = true,
+        hanger_fee = 2.0,
       } = body
 
       // Generate unique QR code
@@ -98,13 +98,13 @@ serve(async (req) => {
           condition,
           price: parseFloat(price),
           images: images || [],
-          qrCode,
-          storeId,
-          sellerId,
-          isConsignment,
-          hangerFee: parseFloat(hangerFee),
+          qr_code: qrCode,
+          store_id,
+          seller_id,
+          is_consignment,
+          hanger_fee: parseFloat(hanger_fee),
           status: 'PENDING_DROPOFF',
-          uploadedAt: new Date().toISOString(),
+          uploaded_at: new Date().toISOString(),
         })
         .select()
         .single()

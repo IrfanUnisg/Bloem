@@ -8,9 +8,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { contactService } from "@/services/contact.service";
 
 const Contact = () => {
   const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -18,13 +20,27 @@ const Contact = () => {
     message: "",
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast({
-      title: "message sent!",
-      description: "we'll get back to you as soon as possible.",
-    });
-    setFormData({ name: "", email: "", subject: "", message: "" });
+    setLoading(true);
+    
+    try {
+      await contactService.submitContact(formData);
+      toast({
+        title: "message sent!",
+        description: "we'll get back to you as soon as possible.",
+      });
+      setFormData({ name: "", email: "", subject: "", message: "" });
+    } catch (error) {
+      console.error("Failed to submit contact form:", error);
+      toast({
+        title: "error",
+        description: "failed to send message. please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -149,8 +165,8 @@ const Contact = () => {
                     />
                   </div>
 
-                  <Button type="submit" className="w-full">
-                    send message
+                  <Button type="submit" className="w-full" disabled={loading}>
+                    {loading ? "sending..." : "send message"}
                   </Button>
                 </form>
               </Card>

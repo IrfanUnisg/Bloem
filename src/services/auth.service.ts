@@ -11,6 +11,7 @@ export interface SignUpData {
   password: string;
   name: string;
   phone?: string;
+  address?: string;
   role?: "seller" | "store" | "admin";
 }
 
@@ -31,6 +32,7 @@ export const authService = {
         data: {
           name: data.name,
           phone: data.phone,
+          address: data.address,
           role: data.role || "seller",
         },
       },

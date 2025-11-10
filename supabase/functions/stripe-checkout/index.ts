@@ -42,8 +42,8 @@ serve(async (req) => {
           *,
           item:items(*)
         ),
-        buyer:users!orders_buyerId_fkey(*),
-        store:stores!orders_storeId_fkey(*)
+        buyer:users!orders_buyer_id_fkey(*),
+        store:stores!orders_store_id_fkey(*)
       `)
       .eq('id', orderId)
       .single()
@@ -62,19 +62,19 @@ serve(async (req) => {
       currency: 'eur',
       metadata: {
         orderId: order.id,
-        orderNumber: order.orderNumber,
+        orderNumber: order.order_number,
         storeId: order.storeId,
         buyerId: order.buyerId,
       },
-      description: `Bloem Order ${order.orderNumber}`,
+      description: `Bloem Order ${order.order_number}`,
     })
 
     // Update order with payment intent ID
     await supabaseClient
       .from('orders')
       .update({
-        paymentIntentId: paymentIntent.id,
-        updatedAt: new Date().toISOString(),
+        payment_intent_id: paymentIntent.id,
+        updated_at: new Date().toISOString(),
       })
       .eq('id', orderId)
 

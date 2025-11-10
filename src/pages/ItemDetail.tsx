@@ -1,15 +1,16 @@
+import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { mockItems } from "@/data/mockItems";
-import { mockStores } from "@/data/mockStores";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { itemService } from "@/services/item.service";
+import { ItemWithRelations } from "@/types";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, MapPin, Clock, Heart, ShoppingBag } from "lucide-react";
+import { ArrowLeft, MapPin, Clock, Heart, ShoppingBag, Loader2 } from "lucide-react";
 
 const ItemDetail = () => {
   const { id } = useParams();
@@ -17,9 +18,80 @@ const ItemDetail = () => {
   const { addToCart } = useCart();
   const { user } = useAuth();
   const { toast } = useToast();
+  
+  const [item, setItem] = useState<ItemWithRelations | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedImage, setSelectedImage] = useState(0);
 
-  const item = mockItems.find(i => i.id === id);
-  const store = item ? mockStores.find(s => s.id === item.store.id) : null;
+  useEffect(() => {
+    if (id) {
+      fetchItem(id);
+    }
+  }, [id]);
+
+  const fetchItem = async (itemId: string) => {
+    setIsLoading(true);
+    try {
+      const fetchedItem = await itemService.getItemById(itemId);
+      setItem(fetchedItem);
+    } catch (error) {
+      console.error("Error fetching item:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load item details.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleAddToCart = async () => {
+    if (!user) {
+      toast({
+        title: "Sign in required",
+        description: "Please sign in to add items to your cart.",
+        variant: "destructive",
+      });
+      navigate("/signin");
+      return;
+    }
+
+    if (!item || item.status !== "FOR_SALE") {
+      toast({
+        title: "Item unavailable",
+        description: "This item is no longer available for purchase.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      await addToCart(item.id);
+      toast({
+        title: "Added to cart",
+        description: `${item.title} has been added to your cart.`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to add item to cart.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <Header variant={user ? "authenticated" : "public"} />
+        <main className="flex-1 flex items-center justify-center px-4">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   if (!item) {
     return (
@@ -40,23 +112,8 @@ const ItemDetail = () => {
     );
   }
 
-  const handleAddToCart = () => {
-    if (item.status !== "for_sale") {
-      toast({
-        title: "Item unavailable",
-        description: "This item is no longer available for purchase.",
-        variant: "destructive",
-      });
-      return;
-    }
-    addToCart(item);
-    toast({
-      title: "Added to cart",
-      description: `${item.title} has been added to your cart.`,
-    });
-  };
-
-  const isAvailable = item.status === "for_sale";
+  const isAvailable = item.status === "FOR_SALE";
+  const store = item.store;
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -77,17 +134,29 @@ const ItemDetail = () => {
             {/* Image Gallery */}
             <div>
               <div className="aspect-square rounded-lg overflow-hidden bg-muted mb-4">
-                <img
-                  src={item.images[0]}
-                  alt={item.title}
-                  className="w-full h-full object-cover"
-                />
+                {item.images && item.images.length > 0 ? (
+                  <img
+                    src={item.images[selectedImage]}
+                    alt={item.title}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                    No Image Available
+                  </div>
+                )}
               </div>
-              {item.images.length > 1 && (
+              {item.images && item.images.length > 1 && (
                 <div className="grid grid-cols-4 gap-4">
-                  {item.images.slice(1).map((img, idx) => (
-                    <div key={idx} className="aspect-square rounded-lg overflow-hidden bg-muted">
-                      <img src={img} alt={`${item.title} ${idx + 2}`} className="w-full h-full object-cover" />
+                  {item.images.map((img, idx) => (
+                    <div
+                      key={idx}
+                      onClick={() => setSelectedImage(idx)}
+                      className={`aspect-square rounded-lg overflow-hidden bg-muted cursor-pointer border-2 transition-all ${
+                        selectedImage === idx ? "border-primary" : "border-transparent hover:border-muted-foreground/50"
+                      }`}
+                    >
+                      <img src={img} alt={`${item.title} ${idx + 1}`} className="w-full h-full object-cover" />
                     </div>
                   ))}
                 </div>
@@ -99,7 +168,7 @@ const ItemDetail = () => {
               <div className="flex items-start justify-between mb-4">
                 <div>
                   <h1 className="text-3xl font-bold text-foreground mb-2">{item.title}</h1>
-                  <p className="text-2xl font-semibold text-primary">€{item.price}</p>
+                  <p className="text-2xl font-semibold text-primary">€{item.price.toFixed(2)}</p>
                 </div>
                 <Button variant="ghost" size="icon">
                   <Heart className="h-5 w-5" />
@@ -110,6 +179,7 @@ const ItemDetail = () => {
                 <Badge variant="secondary">{item.condition}</Badge>
                 <Badge variant="outline">{item.category}</Badge>
                 <Badge variant="outline">Size {item.size}</Badge>
+                {item.brand && <Badge variant="outline">{item.brand}</Badge>}
               </div>
 
               <div className="prose prose-sm max-w-none mb-8">
@@ -122,42 +192,81 @@ const ItemDetail = () => {
                     <ShoppingBag className="mr-2 h-5 w-5" />
                     Add to Cart
                   </Button>
-                  <Button size="lg" variant="outline" className="flex-1">
-                    Reserve for Try-On
-                  </Button>
                 </div>
               ) : (
                 <div className="bg-muted p-4 rounded-lg mb-8">
                   <p className="text-sm font-medium text-muted-foreground">
-                    This item is currently {item.status === "sold" ? "sold" : item.status === "reserved" ? "reserved" : "pending drop-off"}
+                    This item is currently{" "}
+                    {item.status === "SOLD"
+                      ? "sold"
+                      : item.status === "RESERVED"
+                      ? "reserved"
+                      : item.status === "PENDING_DROPOFF"
+                      ? "pending drop-off"
+                      : "unavailable"}
                   </p>
                 </div>
               )}
+
+              {/* Item Details */}
+              <Card className="p-6 mb-6">
+                <h3 className="text-lg font-semibold text-foreground mb-4">Item Details</h3>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Category:</span>
+                    <span className="font-medium text-foreground">{item.category}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Size:</span>
+                    <span className="font-medium text-foreground">{item.size}</span>
+                  </div>
+                  {item.brand && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Brand:</span>
+                      <span className="font-medium text-foreground">{item.brand}</span>
+                    </div>
+                  )}
+                  {item.color && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Color:</span>
+                      <span className="font-medium text-foreground">{item.color}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Condition:</span>
+                    <span className="font-medium text-foreground">{item.condition}</span>
+                  </div>
+                </div>
+              </Card>
 
               {/* Store Info */}
               {store && (
                 <Card className="p-6">
                   <h3 className="text-lg font-semibold text-foreground mb-4">Available at</h3>
-                  <div className="flex items-start gap-4">
-                    <div className="h-16 w-16 rounded-lg overflow-hidden bg-muted flex-shrink-0">
-                      <img src={store.image} alt={store.name} className="w-full h-full object-cover" />
-                    </div>
-                    <div className="flex-1">
+                  <div className="space-y-3">
+                    <div>
                       <h4 className="font-semibold text-foreground mb-1">{store.name}</h4>
                       <div className="flex items-center text-sm text-muted-foreground mb-2">
                         <MapPin className="h-4 w-4 mr-1" />
                         {store.address}, {store.city}
                       </div>
-                      <div className="flex items-center text-sm text-muted-foreground">
-                        <Clock className="h-4 w-4 mr-1" />
-                        {store.hours}
-                      </div>
-                      <Link to={`/browse?store=${store.id}`}>
-                        <Button variant="link" className="px-0 mt-2">
-                          View all items from this store →
-                        </Button>
-                      </Link>
+                      {store.hours && (
+                        <div className="flex items-center text-sm text-muted-foreground">
+                          <Clock className="h-4 w-4 mr-1" />
+                          {store.hours}
+                        </div>
+                      )}
                     </div>
+                    {store.phone && (
+                      <div className="text-sm text-muted-foreground">
+                        Phone: {store.phone}
+                      </div>
+                    )}
+                    <Link to={`/browse?storeId=${store.id}`}>
+                      <Button variant="link" className="px-0">
+                        View all items from this store →
+                      </Button>
+                    </Link>
                   </div>
                 </Card>
               )}

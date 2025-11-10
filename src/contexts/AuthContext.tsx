@@ -116,6 +116,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         password,
         name,
         phone,
+        address,
         role,
       });
       
