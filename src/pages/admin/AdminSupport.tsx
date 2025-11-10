@@ -1,274 +1,314 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, MessageSquare, AlertCircle, CheckCircle } from "lucide-react";
-
-interface SupportTicket {
-  id: string;
-  subject: string;
-  description: string;
-  userId: string;
-  userName: string;
-  userEmail: string;
-  priority: "low" | "medium" | "high";
-  status: "open" | "in_progress" | "resolved";
-  createdAt: string;
-  category: "payment" | "technical" | "account" | "item" | "store";
-}
-
-const mockTickets: SupportTicket[] = [
-  {
-    id: "ticket1",
-    subject: "Payment not received",
-    description: "I sold an item 3 days ago but haven't received the payout yet.",
-    userId: "user1",
-    userName: "Emma S.",
-    userEmail: "emma@example.com",
-    priority: "high",
-    status: "open",
-    createdAt: "2025-01-15",
-    category: "payment",
-  },
-  {
-    id: "ticket2",
-    subject: "Cannot upload photos",
-    description: "Getting an error when trying to upload item photos from my phone.",
-    userId: "user2",
-    userName: "Lucas M.",
-    userEmail: "lucas@example.com",
-    priority: "medium",
-    status: "in_progress",
-    createdAt: "2025-01-14",
-    category: "technical",
-  },
-  {
-    id: "ticket3",
-    subject: "Store not responding",
-    description: "The store hasn't processed my drop-off for over a week.",
-    userId: "user3",
-    userName: "Sophie K.",
-    userEmail: "sophie@example.com",
-    priority: "medium",
-    status: "open",
-    createdAt: "2025-01-13",
-    category: "store",
-  },
-  {
-    id: "ticket4",
-    subject: "Account verification",
-    description: "Need help verifying my account to start selling.",
-    userId: "user4",
-    userName: "Noah P.",
-    userEmail: "noah@example.com",
-    priority: "low",
-    status: "resolved",
-    createdAt: "2025-01-10",
-    category: "account",
-  },
-];
+import { Search, MessageSquare, AlertCircle, CheckCircle, Loader2 } from "lucide-react";
+import { contactService, ContactMessage } from "@/services/contact.service";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 const AdminSupport = () => {
-  const [tickets, setTickets] = useState(mockTickets);
+  const { toast } = useToast();
+  const { user } = useAuth();
+  const [messages, setMessages] = useState<ContactMessage[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [processingId, setProcessingId] = useState<string | null>(null);
 
-  const handleResolve = (id: string) => {
-    setTickets(prev =>
-      prev.map(ticket => ticket.id === id ? { ...ticket, status: "resolved" as const } : ticket)
-    );
+  useEffect(() => {
+    loadMessages();
+  }, []);
+
+  const loadMessages = async () => {
+    try {
+      setLoading(true);
+      const data = await contactService.getContactMessages();
+      setMessages(data);
+    } catch (error) {
+      console.error("Failed to load contact messages:", error);
+      toast({
+        title: "error",
+        description: "failed to load messages",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleInProgress = (id: string) => {
-    setTickets(prev =>
-      prev.map(ticket => ticket.id === id ? { ...ticket, status: "in_progress" as const } : ticket)
-    );
+  const handleStatusChange = async (
+    id: string,
+    status: "new" | "in_progress" | "resolved"
+  ) => {
+    try {
+      setProcessingId(id);
+      await contactService.updateMessageStatus(
+        id,
+        status,
+        status === "resolved" ? user?.id : undefined
+      );
+      await loadMessages();
+      toast({
+        title: "success",
+        description: `message marked as ${status.replace("_", " ")}`,
+      });
+    } catch (error) {
+      console.error("Failed to update message status:", error);
+      toast({
+        title: "error",
+        description: "failed to update message status",
+        variant: "destructive",
+      });
+    } finally {
+      setProcessingId(null);
+    }
   };
 
-  const filteredTickets = tickets.filter(ticket =>
-    ticket.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    ticket.userName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    ticket.category.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredMessages = messages.filter(msg =>
+    msg.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    msg.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    msg.email.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const openCount = tickets.filter(t => t.status === "open").length;
-  const inProgressCount = tickets.filter(t => t.status === "in_progress").length;
-  const resolvedCount = tickets.filter(t => t.status === "resolved").length;
+  const newCount = messages.filter(m => m.status === "new").length;
+  const inProgressCount = messages.filter(m => m.status === "in_progress").length;
+  const resolvedCount = messages.filter(m => m.status === "resolved").length;
 
   return (
     <AdminLayout>
       <div className="py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-foreground mb-2">Support Tickets</h1>
-            <p className="text-muted-foreground">Manage user support requests</p>
+            <h1 className="text-3xl font-bold text-foreground mb-2">support messages</h1>
+            <p className="text-muted-foreground">manage customer inquiries</p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-6 mb-8">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">Open Tickets</CardTitle>
+                <CardTitle className="text-sm font-medium">new messages</CardTitle>
                 <AlertCircle className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{openCount}</div>
-                <p className="text-xs text-muted-foreground mt-1">Awaiting response</p>
+                <div className="text-2xl font-bold">{newCount}</div>
+                <p className="text-xs text-muted-foreground mt-1">awaiting response</p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">In Progress</CardTitle>
+                <CardTitle className="text-sm font-medium">in progress</CardTitle>
                 <MessageSquare className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{inProgressCount}</div>
-                <p className="text-xs text-muted-foreground mt-1">Being handled</p>
+                <p className="text-xs text-muted-foreground mt-1">being handled</p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">Resolved</CardTitle>
+                <CardTitle className="text-sm font-medium">resolved</CardTitle>
                 <CheckCircle className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{resolvedCount}</div>
-                <p className="text-xs text-muted-foreground mt-1">Completed</p>
+                <p className="text-xs text-muted-foreground mt-1">completed</p>
               </CardContent>
             </Card>
           </div>
 
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>All Tickets</CardTitle>
-                  <CardDescription>Review and respond to support requests</CardDescription>
+          {loading ? (
+            <div className="flex justify-center items-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>all messages</CardTitle>
+                    <CardDescription>review and respond to contact messages</CardDescription>
+                  </div>
+                  <div className="relative w-64">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="search messages..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-9"
+                    />
+                  </div>
                 </div>
-                <div className="relative w-64">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search tickets..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-9"
-                  />
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <Tabs defaultValue="open">
-                <TabsList>
-                  <TabsTrigger value="open">Open ({openCount})</TabsTrigger>
-                  <TabsTrigger value="in_progress">In Progress ({inProgressCount})</TabsTrigger>
-                  <TabsTrigger value="resolved">Resolved</TabsTrigger>
-                  <TabsTrigger value="all">All</TabsTrigger>
-                </TabsList>
+              </CardHeader>
+              <CardContent>
+                <Tabs defaultValue="new">
+                  <TabsList>
+                    <TabsTrigger value="new">new ({newCount})</TabsTrigger>
+                    <TabsTrigger value="in_progress">in progress ({inProgressCount})</TabsTrigger>
+                    <TabsTrigger value="resolved">resolved</TabsTrigger>
+                    <TabsTrigger value="all">all</TabsTrigger>
+                  </TabsList>
 
-                <TabsContent value="open" className="space-y-4 mt-6">
-                  {filteredTickets.filter(t => t.status === "open").map(ticket => (
-                    <Card key={ticket.id}>
-                      <CardContent className="p-6">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-3 mb-2">
-                              <h3 className="text-lg font-semibold text-foreground">{ticket.subject}</h3>
-                              <Badge variant={ticket.priority === "high" ? "destructive" : "secondary"}>
-                                {ticket.priority}
-                              </Badge>
-                              <Badge variant="outline">{ticket.category}</Badge>
+                  <TabsContent value="new" className="space-y-4 mt-6">
+                    {filteredMessages.filter(m => m.status === "new").map(msg => (
+                      <Card key={msg.id}>
+                        <CardContent className="p-6">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-3 mb-2">
+                                <h3 className="text-lg font-semibold text-foreground">{msg.subject}</h3>
+                                <Badge variant="destructive">new</Badge>
+                              </div>
+                              <p className="text-sm text-muted-foreground mb-3 whitespace-pre-wrap">{msg.message}</p>
+                              <div className="flex items-center gap-6 text-sm text-muted-foreground">
+                                <div><span className="font-medium">from:</span> {msg.name}</div>
+                                <div><span className="font-medium">email:</span> {msg.email}</div>
+                                <div><span className="font-medium">sent:</span> {new Date(msg.created_at).toLocaleString()}</div>
+                              </div>
                             </div>
-                            <p className="text-sm text-muted-foreground mb-3">{ticket.description}</p>
-                            <div className="flex items-center gap-6 text-sm text-muted-foreground">
-                              <div><span className="font-medium">User:</span> {ticket.userName}</div>
-                              <div><span className="font-medium">Email:</span> {ticket.userEmail}</div>
-                              <div><span className="font-medium">Created:</span> {ticket.createdAt}</div>
+                            <div className="flex gap-2 ml-4">
+                              <Button
+                                size="sm"
+                                onClick={() => handleStatusChange(msg.id, "in_progress")}
+                                disabled={processingId === msg.id}
+                              >
+                                {processingId === msg.id ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  "start working"
+                                )}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleStatusChange(msg.id, "resolved")}
+                                disabled={processingId === msg.id}
+                              >
+                                <CheckCircle className="h-4 w-4 mr-1" />
+                                resolve
+                              </Button>
                             </div>
                           </div>
-                          <div className="flex gap-2 ml-4">
-                            <Button size="sm" onClick={() => handleInProgress(ticket.id)}>
-                              Start Working
+                        </CardContent>
+                      </Card>
+                    ))}
+                    {filteredMessages.filter(m => m.status === "new").length === 0 && (
+                      <div className="text-center py-12 text-muted-foreground">
+                        no new messages
+                      </div>
+                    )}
+                  </TabsContent>
+
+                  <TabsContent value="in_progress" className="space-y-4 mt-6">
+                    {filteredMessages.filter(m => m.status === "in_progress").map(msg => (
+                      <Card key={msg.id}>
+                        <CardContent className="p-6">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-3 mb-2">
+                                <h3 className="text-lg font-semibold text-foreground">{msg.subject}</h3>
+                                <Badge variant="secondary">in progress</Badge>
+                              </div>
+                              <p className="text-sm text-muted-foreground mb-3 whitespace-pre-wrap">{msg.message}</p>
+                              <div className="text-sm text-muted-foreground">
+                                <span className="font-medium">from:</span> {msg.name} ({msg.email})
+                              </div>
+                            </div>
+                            <Button
+                              size="sm"
+                              onClick={() => handleStatusChange(msg.id, "resolved")}
+                              disabled={processingId === msg.id}
+                            >
+                              {processingId === msg.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <>
+                                  <CheckCircle className="h-4 w-4 mr-1" />
+                                  mark resolved
+                                </>
+                              )}
                             </Button>
-                            <Button size="sm" variant="outline" onClick={() => handleResolve(ticket.id)}>
-                              <CheckCircle className="h-4 w-4 mr-1" />
-                              Resolve
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                    {filteredMessages.filter(m => m.status === "in_progress").length === 0 && (
+                      <div className="text-center py-12 text-muted-foreground">
+                        no messages in progress
+                      </div>
+                    )}
+                  </TabsContent>
+
+                  <TabsContent value="resolved" className="space-y-4 mt-6">
+                    {filteredMessages.filter(m => m.status === "resolved").map(msg => (
+                      <Card key={msg.id}>
+                        <CardContent className="p-6">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-3 mb-2">
+                                <h3 className="text-lg font-semibold text-foreground">{msg.subject}</h3>
+                                <Badge variant="default">resolved</Badge>
+                              </div>
+                              <p className="text-sm text-muted-foreground mb-3 whitespace-pre-wrap">{msg.message}</p>
+                              <div className="text-sm text-muted-foreground">
+                                {msg.name} - {msg.email}
+                                {msg.resolved_at && ` • resolved on ${new Date(msg.resolved_at).toLocaleString()}`}
+                              </div>
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleStatusChange(msg.id, "new")}
+                              disabled={processingId === msg.id}
+                            >
+                              {processingId === msg.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                "reopen"
+                              )}
                             </Button>
                           </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                  {filteredTickets.filter(t => t.status === "open").length === 0 && (
-                    <div className="text-center py-12 text-muted-foreground">
-                      No open tickets
-                    </div>
-                  )}
-                </TabsContent>
+                        </CardContent>
+                      </Card>
+                    ))}
+                    {filteredMessages.filter(m => m.status === "resolved").length === 0 && (
+                      <div className="text-center py-12 text-muted-foreground">
+                        no resolved messages
+                      </div>
+                    )}
+                  </TabsContent>
 
-                <TabsContent value="in_progress" className="space-y-4 mt-6">
-                  {filteredTickets.filter(t => t.status === "in_progress").map(ticket => (
-                    <Card key={ticket.id}>
-                      <CardContent className="p-6">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-3 mb-2">
-                              <h3 className="text-lg font-semibold text-foreground">{ticket.subject}</h3>
-                              <Badge>In Progress</Badge>
-                              <Badge variant="outline">{ticket.category}</Badge>
-                            </div>
-                            <p className="text-sm text-muted-foreground mb-3">{ticket.description}</p>
-                            <div className="text-sm text-muted-foreground">
-                              <span className="font-medium">User:</span> {ticket.userName} ({ticket.userEmail})
-                            </div>
+                  <TabsContent value="all" className="space-y-4 mt-6">
+                    {filteredMessages.map(msg => (
+                      <Card key={msg.id}>
+                        <CardContent className="p-6">
+                          <div className="flex items-center gap-3 mb-2">
+                            <h3 className="text-lg font-semibold text-foreground">{msg.subject}</h3>
+                            <Badge variant={msg.status === "new" ? "destructive" : msg.status === "in_progress" ? "secondary" : "default"}>
+                              {msg.status.replace("_", " ")}
+                            </Badge>
                           </div>
-                          <Button size="sm" onClick={() => handleResolve(ticket.id)}>
-                            <CheckCircle className="h-4 w-4 mr-1" />
-                            Mark Resolved
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </TabsContent>
-
-                <TabsContent value="resolved" className="space-y-4 mt-6">
-                  {filteredTickets.filter(t => t.status === "resolved").map(ticket => (
-                    <Card key={ticket.id}>
-                      <CardContent className="p-6">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h3 className="text-lg font-semibold text-foreground">{ticket.subject}</h3>
-                          <Badge variant="default">Resolved</Badge>
-                        </div>
-                        <p className="text-sm text-muted-foreground">
-                          {ticket.userName} - {ticket.userEmail}
-                        </p>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </TabsContent>
-
-                <TabsContent value="all" className="space-y-4 mt-6">
-                  {filteredTickets.map(ticket => (
-                    <Card key={ticket.id}>
-                      <CardContent className="p-6">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h3 className="text-lg font-semibold text-foreground">{ticket.subject}</h3>
-                          <Badge variant={ticket.status === "resolved" ? "default" : "secondary"}>
-                            {ticket.status.replace("_", " ")}
-                          </Badge>
-                          <Badge variant="outline">{ticket.category}</Badge>
-                        </div>
-                        <p className="text-sm text-muted-foreground">{ticket.description}</p>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </TabsContent>
-              </Tabs>
-            </CardContent>
-          </Card>
+                          <p className="text-sm text-muted-foreground whitespace-pre-wrap">{msg.message}</p>
+                          <div className="text-xs text-muted-foreground mt-2">
+                            {msg.name} - {msg.email} • {new Date(msg.created_at).toLocaleString()}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                    {filteredMessages.length === 0 && (
+                      <div className="text-center py-12 text-muted-foreground">
+                        no messages found
+                      </div>
+                    )}
+                  </TabsContent>
+                </Tabs>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </AdminLayout>

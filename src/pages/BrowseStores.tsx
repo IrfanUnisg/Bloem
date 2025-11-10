@@ -1,18 +1,52 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { StoreCard } from "@/components/cards/StoreCard";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Search, MapPin } from "lucide-react";
-import { mockStores } from "@/data/mockStores";
+import { Search, MapPin, Loader2 } from "lucide-react";
+import { storeService, Store } from "@/services/store.service";
+import { useToast } from "@/hooks/use-toast";
 
 const BrowseStores = () => {
+  const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
+  const [stores, setStores] = useState<Store[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const filteredStores = mockStores.filter((store) =>
+  useEffect(() => {
+    loadStores();
+  }, []);
+
+  const loadStores = async () => {
+    setLoading(true);
+    try {
+      const activeStores = await storeService.getActiveStores();
+      setStores(activeStores);
+    } catch (error) {
+      console.error('Error loading stores:', error);
+      toast({
+        title: "Error loading stores",
+        description: "Failed to load stores. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredStores = stores.filter((store) =>
     store.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     store.city.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 flex items-center justify-center min-h-[400px]">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
@@ -43,9 +77,9 @@ const BrowseStores = () => {
             <StoreCard
               key={store.id}
               name={store.name}
-              address={store.address}
-              distance={`${store.city}`}
-              hours={store.hours}
+              address={`${store.address}, ${store.city}`}
+              distance={store.city}
+              hours={store.hours || 'Hours not provided'}
             />
           ))}
         </div>

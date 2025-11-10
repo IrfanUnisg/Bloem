@@ -53,8 +53,8 @@ export const orderService = {
             *,
             item:items(*)
           ),
-          buyer:users!orders_buyerId_fkey(*),
-          store:stores!orders_storeId_fkey(*)
+          buyer:users!orders_buyer_id_fkey(*),
+          store:stores!orders_store_id_fkey(*)
         `)
         .eq('id', orderId)
         .single();
@@ -128,6 +128,39 @@ export const orderService = {
       return orders as OrderWithItems[];
     } catch (error) {
       console.error('Error fetching store orders:', error);
+      return [];
+    }
+  },
+
+  /**
+   * Get orders containing items sold by a specific seller
+   */
+  async getOrdersBySeller(sellerId: string): Promise<OrderWithItems[]> {
+    try {
+      const { data: orders, error } = await supabase
+        .from('orders')
+        .select(`
+          *,
+          items:order_items(
+            *,
+            item:items!inner(*)
+          ),
+          buyer:users!orders_buyer_id_fkey(*),
+          store:stores!orders_store_id_fkey(*)
+        `)
+        .eq('items.item.seller_id', sellerId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      
+      // Filter out orders where none of the items belong to the seller
+      const filteredOrders = (orders || []).filter(order => 
+        order.items?.some((oi: any) => oi.item?.seller_id === sellerId)
+      );
+
+      return filteredOrders as OrderWithItems[];
+    } catch (error) {
+      console.error('Error fetching seller orders:', error);
       return [];
     }
   },

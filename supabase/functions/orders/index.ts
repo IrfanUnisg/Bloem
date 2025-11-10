@@ -44,13 +44,13 @@ serve(async (req) => {
             *,
             item:items(*)
           ),
-          buyer:users!orders_buyerId_fkey(id, name, email, phone),
-          store:stores!orders_storeId_fkey(id, name, address, city, phone)
+          buyer:users!orders_buyer_id_fkey(id, name, email, phone),
+          store:stores!orders_store_id_fkey(id, name, address, city, phone)
         `)
-        .order('createdAt', { ascending: false })
+        .order('created_at', { ascending: false })
 
-      if (userId) query = query.eq('buyerId', userId)
-      if (storeId) query = query.eq('storeId', storeId)
+      if (userId) query = query.eq('buyer_id', userId)
+      if (storeId) query = query.eq('store_id', storeId)
       if (status) query = query.eq('status', status)
 
       const { data: orders, error } = await query
@@ -73,7 +73,7 @@ serve(async (req) => {
       // Fetch all items
       const { data: items, error: itemsError } = await supabaseClient
         .from('items')
-        .select('*, store:stores!items_storeId_fkey(*)')
+        .select('*, store:stores!items_store_id_fkey(*)')
         .in('id', itemIds)
         .eq('status', 'FOR_SALE')
 
@@ -84,8 +84,8 @@ serve(async (req) => {
       }
 
       // Verify all items are from the same store
-      const itemStoreId = storeId || items[0].storeId
-      const allSameStore = items.every((item: any) => item.storeId === itemStoreId)
+      const itemStoreId = storeId || items[0].store_id
+      const allSameStore = items.every((item: any) => item.store_id === itemStoreId)
 
       if (!allSameStore) {
         throw new Error('All items must be from the same store')
@@ -106,16 +106,16 @@ serve(async (req) => {
       const { data: order, error: orderError } = await supabaseClient
         .from('orders')
         .insert({
-          orderNumber: generateOrderNumber(),
+          order_number: generateOrderNumber(),
           status: 'RESERVED',
-          pickupMethod: 'IN_STORE',
+          pickup_method: 'IN_STORE',
           subtotal,
-          serviceFee,
+          service_fee: serviceFee,
           tax,
           total,
-          buyerId: userId,
-          storeId: itemStoreId,
-          createdAt: new Date().toISOString(),
+          buyer_id: userId,
+          store_id: itemStoreId,
+          created_at: new Date().toISOString(),
         })
         .select()
         .single()
@@ -126,40 +126,40 @@ serve(async (req) => {
       for (const item of items) {
         const priceAtPurchase = item.price
         const platformFee = priceAtPurchase * platformFeeRate
-        const storeCommission = item.isConsignment ? priceAtPurchase * commissionRate : 0
-        const sellerPayout = item.isConsignment
+        const storeCommission = item.is_consignment ? priceAtPurchase * commissionRate : 0
+        const sellerPayout = item.is_consignment
           ? priceAtPurchase - storeCommission - platformFee
           : 0
 
         // Create order item
         await supabaseClient.from('order_items').insert({
-          orderId: order.id,
-          itemId: item.id,
-          priceAtPurchase,
-          sellerPayout,
-          storeCommission,
-          platformFee,
-          createdAt: new Date().toISOString(),
+          order_id: order.id,
+          item_id: item.id,
+          price_at_purchase: priceAtPurchase,
+          seller_payout: sellerPayout,
+          store_commission: storeCommission,
+          platform_fee: platformFee,
+          created_at: new Date().toISOString(),
         })
 
         // Update item status to RESERVED
         await supabaseClient
           .from('items')
-          .update({ status: 'RESERVED', updatedAt: new Date().toISOString() })
+          .update({ status: 'RESERVED', updated_at: new Date().toISOString() })
           .eq('id', item.id)
 
         // Create transaction record if consignment
-        if (item.isConsignment && item.sellerId) {
+        if (item.is_consignment && item.seller_id) {
           await supabaseClient.from('transactions').insert({
             amount: priceAtPurchase,
-            sellerEarnings: sellerPayout,
-            storeCommission,
-            platformFee,
+            seller_earnings: sellerPayout,
+            store_commission: storeCommission,
+            platform_fee: platformFee,
             status: 'PENDING',
-            orderId: order.id,
-            itemId: item.id,
-            sellerId: item.sellerId,
-            createdAt: new Date().toISOString(),
+            order_id: order.id,
+            item_id: item.id,
+            seller_id: item.seller_id,
+            created_at: new Date().toISOString(),
           })
         }
       }
@@ -168,8 +168,8 @@ serve(async (req) => {
       await supabaseClient
         .from('cart_items')
         .delete()
-        .eq('userId', userId)
-        .in('itemId', itemIds)
+        .eq('user_id', userId)
+        .in('item_id', itemIds)
 
       // Fetch complete order
       const { data: completeOrder } = await supabaseClient
@@ -180,8 +180,8 @@ serve(async (req) => {
             *,
             item:items(*)
           ),
-          buyer:users!orders_buyerId_fkey(*),
-          store:stores!orders_storeId_fkey(*)
+          buyer:users!orders_buyer_id_fkey(*),
+          store:stores!orders_store_id_fkey(*)
         `)
         .eq('id', order.id)
         .single()

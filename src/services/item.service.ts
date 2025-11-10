@@ -96,10 +96,10 @@ export const itemService = {
           condition: data.condition,
           price: data.price,
           images: imageUrls,
-          storeId: data.storeId,
-          sellerId,
-          isConsignment: true,
-          hangerFee: 2.0,
+          store_id: data.storeId,
+          seller_id: sellerId,
+          is_consignment: true,
+          hanger_fee: 2.0,
         }),
       });
 
@@ -125,8 +125,8 @@ export const itemService = {
         .from('items')
         .select(`
           *,
-          seller:users!items_sellerId_fkey(id, name, avatar, phone),
-          store:stores!items_storeId_fkey(id, name, city, address, phone, hours)
+          seller:users!items_seller_id_fkey(id, name, avatar, phone),
+          store:stores!items_store_id_fkey(id, name, city, address, phone, hours)
         `)
         .eq('id', itemId)
         .single();
@@ -142,13 +142,17 @@ export const itemService = {
   /**
    * Get items by seller
    */
-  async getItemsBySeller(sellerId: string, status?: ItemStatus): Promise<Item[]> {
+  async getItemsBySeller(sellerId: string, status?: ItemStatus): Promise<ItemWithRelations[]> {
     try {
       let query = supabase
         .from('items')
-        .select('*')
-        .eq('sellerId', sellerId)
-        .order('createdAt', { ascending: false });
+        .select(`
+          *,
+          seller:users!items_seller_id_fkey(*),
+          store:stores!items_store_id_fkey(*)
+        `)
+        .eq('seller_id', sellerId)
+        .order('created_at', { ascending: false });
 
       if (status) {
         query = query.eq('status', status);
@@ -157,7 +161,7 @@ export const itemService = {
       const { data: items, error } = await query;
 
       if (error) throw error;
-      return items as Item[];
+      return items as ItemWithRelations[];
     } catch (error) {
       console.error('Error fetching seller items:', error);
       return [];
@@ -167,13 +171,17 @@ export const itemService = {
   /**
    * Get items by store
    */
-  async getItemsByStore(storeId: string, status?: ItemStatus): Promise<Item[]> {
+  async getItemsByStore(storeId: string, status?: ItemStatus): Promise<ItemWithRelations[]> {
     try {
       let query = supabase
         .from('items')
-        .select('*')
-        .eq('storeId', storeId)
-        .order('createdAt', { ascending: false });
+        .select(`
+          *,
+          seller:users!items_seller_id_fkey(id, name, avatar, phone),
+          store:stores!items_store_id_fkey(id, name, city, address)
+        `)
+        .eq('store_id', storeId)
+        .order('created_at', { ascending: false });
 
       if (status) {
         query = query.eq('status', status);
@@ -182,7 +190,7 @@ export const itemService = {
       const { data: items, error } = await query;
 
       if (error) throw error;
-      return items as Item[];
+      return items as ItemWithRelations[];
     } catch (error) {
       console.error('Error fetching store items:', error);
       return [];

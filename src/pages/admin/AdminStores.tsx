@@ -1,74 +1,90 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Check, X, Clock, Store } from "lucide-react";
-
-interface StoreApplication {
-  id: string;
-  storeName: string;
-  ownerName: string;
-  email: string;
-  address: string;
-  city: string;
-  phone: string;
-  submittedAt: string;
-  status: "pending" | "approved" | "rejected";
-}
-
-const mockApplications: StoreApplication[] = [
-  {
-    id: "app1",
-    storeName: "Urban Threads",
-    ownerName: "Maria Garcia",
-    email: "maria@urbanthreads.nl",
-    address: "Prinsengracht 234",
-    city: "Amsterdam",
-    phone: "+31 20 555 0606",
-    submittedAt: "2025-01-14",
-    status: "pending",
-  },
-  {
-    id: "app2",
-    storeName: "Retro Corner",
-    ownerName: "Jan de Vries",
-    email: "jan@retrocorner.nl",
-    address: "Westerstraat 89",
-    city: "Amsterdam",
-    phone: "+31 20 555 0707",
-    submittedAt: "2025-01-13",
-    status: "pending",
-  },
-  {
-    id: "app3",
-    storeName: "Eco Fashion Hub",
-    ownerName: "Sara Johnson",
-    email: "sara@ecofashion.nl",
-    address: "Nieuwmarkt 45",
-    city: "Amsterdam",
-    phone: "+31 20 555 0808",
-    submittedAt: "2025-01-10",
-    status: "approved",
-  },
-];
+import { Search, Check, X, Clock, Store, Loader2 } from "lucide-react";
+import { adminService, StoreApplication } from "@/services/admin.service";
+import { useToast } from "@/hooks/use-toast";
 
 const AdminStores = () => {
-  const [applications, setApplications] = useState(mockApplications);
+  const { toast } = useToast();
+  const [applications, setApplications] = useState<StoreApplication[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [processingId, setProcessingId] = useState<string | null>(null);
 
-  const handleApprove = (id: string) => {
-    setApplications(prev =>
-      prev.map(app => app.id === id ? { ...app, status: "approved" as const } : app)
-    );
+  useEffect(() => {
+    loadApplications();
+  }, []);
+
+  const loadApplications = async () => {
+    setLoading(true);
+    try {
+      const apps = await adminService.getStoreApplications();
+      setApplications(apps);
+    } catch (error) {
+      console.error('Error loading applications:', error);
+      toast({
+        title: "Error loading applications",
+        description: "Failed to load store applications. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleReject = (id: string) => {
-    setApplications(prev =>
-      prev.map(app => app.id === id ? { ...app, status: "rejected" as const } : app)
-    );
+  const handleApprove = async (id: string) => {
+    setProcessingId(id);
+    try {
+      const success = await adminService.approveStore(id);
+      
+      if (success) {
+        toast({
+          title: "Store approved!",
+          description: "The store is now active and can accept items.",
+        });
+        await loadApplications(); // Reload data
+      } else {
+        throw new Error('Approval failed');
+      }
+    } catch (error) {
+      toast({
+        title: "Error approving store",
+        description: "Failed to approve the store. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const handleReject = async (id: string) => {
+    setProcessingId(id);
+    try {
+      const success = await adminService.rejectStore(id);
+      
+      if (success) {
+        toast({
+          title: "Store rejected",
+          description: "The store owner will be notified.",
+        });
+        await loadApplications(); // Reload data
+      } else {
+        throw new Error('Rejection failed');
+      }
+    } catch (error) {
+      toast({
+        title: "Error rejecting store",
+        description: "Failed to reject the store. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setProcessingId(null);
+    }
   };
 
   const filteredApplications = applications.filter(app =>
@@ -79,6 +95,16 @@ const AdminStores = () => {
 
   const pendingCount = applications.filter(a => a.status === "pending").length;
   const approvedCount = applications.filter(a => a.status === "approved").length;
+
+  if (loading) {
+    return (
+      <AdminLayout>
+        <div className="py-12 px-4 sm:px-6 lg:px-8 flex items-center justify-center min-h-[400px]">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      </AdminLayout>
+    );
+  }
 
   return (
     <AdminLayout>
@@ -169,11 +195,24 @@ const AdminStores = () => {
                             </div>
                           </div>
                           <div className="flex gap-2 ml-4">
-                            <Button size="sm" onClick={() => handleApprove(app.id)}>
-                              <Check className="h-4 w-4 mr-1" />
+                            <Button 
+                              size="sm" 
+                              onClick={() => handleApprove(app.id)}
+                              disabled={processingId === app.id}
+                            >
+                              {processingId === app.id ? (
+                                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                              ) : (
+                                <Check className="h-4 w-4 mr-1" />
+                              )}
                               Approve
                             </Button>
-                            <Button size="sm" variant="destructive" onClick={() => handleReject(app.id)}>
+                            <Button 
+                              size="sm" 
+                              variant="destructive" 
+                              onClick={() => handleReject(app.id)}
+                              disabled={processingId === app.id}
+                            >
                               <X className="h-4 w-4 mr-1" />
                               Reject
                             </Button>

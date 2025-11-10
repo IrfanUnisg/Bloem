@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { StoreLayout } from "@/components/layout/StoreLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,40 +6,79 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { mockItems } from "@/data/mockItems";
-import { Scan, ShoppingBag, CreditCard, CheckCircle, X } from "lucide-react";
+import { Scan, ShoppingBag, CreditCard, CheckCircle, X, Loader2 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { storeService } from "@/services/store.service";
+import { itemService } from "@/services/item.service";
+import { ItemWithRelations } from "@/types";
 
 const StoreCheckout = () => {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [qrCode, setQrCode] = useState("");
-  const [scannedItems, setScannedItems] = useState<typeof mockItems>([]);
+  const [scannedItems, setScannedItems] = useState<ItemWithRelations[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [storeId, setStoreId] = useState<string | null>(null);
 
-  const handleScanQR = () => {
-    // Simulate QR code scanning
-    const foundItem = mockItems.find(item => item.id === qrCode && item.status === "for_sale");
-    
-    if (foundItem) {
-      // Check if item already in cart
-      if (scannedItems.find(item => item.id === foundItem.id)) {
+  useEffect(() => {
+    loadStore();
+  }, [user]);
+
+  const loadStore = async () => {
+    if (!user) return;
+    const store = await storeService.getStoreByOwnerId(user.id);
+    if (store) {
+      setStoreId(store.id);
+    }
+  };
+
+  const handleScanQR = async () => {
+    if (!storeId) {
+      toast({
+        title: "Store not found",
+        description: "You don't have a store associated with your account.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      // Try to find item by QR code in the database
+      // For now, we'll search by ID since QR code lookup needs a custom query
+      const allItems = await itemService.getItemsByStore(storeId, "FOR_SALE");
+      const foundItem = allItems.find(item => 
+        item.id === qrCode || item.qrCode === qrCode
+      );
+      
+      if (foundItem) {
+        // Check if item already in cart
+        if (scannedItems.find(item => item.id === foundItem.id)) {
+          toast({
+            title: "Item already scanned",
+            description: "This item is already in the current transaction.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        setScannedItems(prev => [...prev, foundItem]);
+        setQrCode("");
         toast({
-          title: "Item already scanned",
-          description: "This item is already in the current transaction.",
+          title: "Item scanned",
+          description: `${foundItem.title} added to transaction.`,
+        });
+      } else {
+        toast({
+          title: "Item not found",
+          description: "Invalid QR code or item not available for sale at this store.",
           variant: "destructive",
         });
-        return;
       }
-
-      setScannedItems(prev => [...prev, foundItem]);
-      setQrCode("");
+    } catch (error) {
+      console.error('Error scanning item:', error);
       toast({
-        title: "Item scanned",
-        description: `${foundItem.title} added to transaction.`,
-      });
-    } else {
-      toast({
-        title: "Item not found",
-        description: "Invalid QR code or item not available for sale.",
+        title: "Error",
+        description: "Failed to scan item. Please try again.",
         variant: "destructive",
       });
     }
@@ -65,17 +104,38 @@ const StoreCheckout = () => {
 
     setIsProcessing(true);
     
-    // Simulate payment processing
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    toast({
-      title: "Payment successful",
-      description: `Transaction completed. Total: €${totalAmount.toFixed(2)}`,
-    });
-    
-    // Clear transaction
-    setScannedItems([]);
-    setIsProcessing(false);
+    try {
+      // In real implementation, this would:
+      // 1. Create an order
+      // 2. Update item statuses to SOLD
+      // 3. Process payment
+      // 4. Generate transaction records
+      
+      // For now, simulate processing
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      // Update item statuses to SOLD
+      for (const item of scannedItems) {
+        await itemService.updateItemStatus(item.id, "SOLD");
+      }
+      
+      toast({
+        title: "Payment successful",
+        description: `Transaction completed. Total: €${totalAmount.toFixed(2)}`,
+      });
+      
+      // Clear transaction
+      setScannedItems([]);
+    } catch (error) {
+      console.error('Error processing payment:', error);
+      toast({
+        title: "Payment failed",
+        description: "Failed to process payment. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const subtotal = scannedItems.reduce((sum, item) => sum + item.price, 0);
@@ -117,7 +177,7 @@ const StoreCheckout = () => {
                   </Button>
                 </div>
                 <p className="text-sm text-muted-foreground mt-3">
-                  Tip: For testing, try item IDs: 1, 2, 5, 6, 7, 9
+                  Scan QR codes from item tags. Items must be from your store and listed for sale.
                 </p>
               </CardContent>
             </Card>
