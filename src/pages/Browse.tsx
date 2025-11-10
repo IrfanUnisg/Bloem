@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Header } from "@/components/layout/Header";
 import { ItemCard } from "@/components/cards/ItemCard";
@@ -9,32 +9,91 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/contexts/CartContext";
-import { mockItems } from "@/data/mockItems";
-import { Filter, ShoppingBag } from "lucide-react";
+import { itemService } from "@/services/item.service";
+import { ItemWithRelations } from "@/types";
+import { Filter, ShoppingBag, Loader2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 const Browse = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { totalItems } = user ? useCart() : { totalItems: 0 };
+  const { toast } = useToast();
+
+  const [items, setItems] = useState<ItemWithRelations[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
   const [selectedConditions, setSelectedConditions] = useState<string[]>([]);
   const [priceRange, setPriceRange] = useState([0, 100]);
-  const [maxDistance, setMaxDistance] = useState(10);
   const [sortBy, setSortBy] = useState("newest");
 
-  const categories = ["jackets", "coats", "dresses", "tops", "pants", "sweaters", "shoes", "skirts"];
-  const sizes = ["xs", "s", "m", "l", "xl"];
-  const conditions = ["new with tags", "like new", "good", "fair"];
+  const categories = ["Tops", "Bottoms", "Dresses", "Outerwear", "Accessories", "Shoes"];
+  const sizes = ["XS", "S", "M", "L", "XL"];
+  const conditions = ["Like New", "Excellent", "Good", "Fair"];
 
-  // Filter items to show only items for sale
-  const availableItems = mockItems.filter(item => item.status === "for_sale");
-  
-  const filteredItems = availableItems.filter(item => {
-    const categoryMatch = selectedCategories.length === 0 || selectedCategories.includes(item.category);
-    const sizeMatch = selectedSizes.length === 0 || selectedSizes.includes(item.size);
-    const priceMatch = item.price >= priceRange[0] && item.price <= priceRange[1];
-    return categoryMatch && sizeMatch && priceMatch;
+  useEffect(() => {
+    fetchItems();
+  }, [selectedCategories, selectedSizes, selectedConditions, priceRange]);
+
+  const fetchItems = async () => {
+    setIsLoading(true);
+    try {
+      const filters: any = {
+        status: 'FOR_SALE',
+        limit: 50,
+        offset: 0
+      };
+
+      if (selectedCategories.length > 0) {
+        // Fetch for each category and combine
+        const categoryPromises = selectedCategories.map(cat => 
+          itemService.browseItems({ ...filters, category: cat })
+        );
+        const categoryResults = await Promise.all(categoryPromises);
+        const allItems = categoryResults.flat();
+        setItems(allItems);
+      } else {
+        if (priceRange[0] > 0) filters.minPrice = priceRange[0];
+        if (priceRange[1] < 100) filters.maxPrice = priceRange[1];
+
+        const fetchedItems = await itemService.browseItems(filters);
+        
+        // Apply client-side filters for size and condition
+        let filtered = fetchedItems;
+        
+        if (selectedSizes.length > 0) {
+          filtered = filtered.filter(item => selectedSizes.includes(item.size));
+        }
+        
+        if (selectedConditions.length > 0) {
+          filtered = filtered.filter(item => selectedConditions.includes(item.condition));
+        }
+
+        setItems(filtered);
+      }
+    } catch (error: any) {
+      console.error('Error fetching items:', error);
+      toast({
+        title: "Error loading items",
+        description: error.message || "Failed to load items. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const sortedItems = [...items].sort((a, b) => {
+    switch (sortBy) {
+      case "price-low":
+        return a.price - b.price;
+      case "price-high":
+        return b.price - a.price;
+      case "newest":
+      default:
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    }
   });
 
   const toggleCategory = (category: string) => {
@@ -60,7 +119,6 @@ const Browse = () => {
     setSelectedSizes([]);
     setSelectedConditions([]);
     setPriceRange([0, 100]);
-    setMaxDistance(10);
   };
 
   return (
@@ -73,7 +131,9 @@ const Browse = () => {
           <div className="flex items-center justify-between mb-8">
             <div>
               <h1 className="text-3xl font-bold text-foreground mb-2">browse inventory</h1>
-              <p className="text-muted-foreground">discover unique finds from local thrift stores</p>
+              <p className="text-muted-foreground">
+                {isLoading ? "Loading..." : `${sortedItems.length} unique finds from local thrift stores`}
+              </p>
             </div>
             <div className="flex items-center gap-4">
               {user && (
@@ -122,7 +182,7 @@ const Browse = () => {
                           onCheckedChange={() => toggleCategory(category)}
                         />
                         <Label htmlFor={category} className="text-sm cursor-pointer">
-                          {category}
+                          {category.toLowerCase()}
                         </Label>
                       </div>
                     ))}
@@ -160,7 +220,7 @@ const Browse = () => {
                           onCheckedChange={() => toggleCondition(condition)}
                         />
                         <Label htmlFor={condition} className="text-sm cursor-pointer">
-                          {condition}
+                          {condition.toLowerCase()}
                         </Label>
                       </div>
                     ))}
@@ -183,21 +243,6 @@ const Browse = () => {
                   </div>
                 </div>
 
-                {/* Distance */}
-                <div>
-                  <h4 className="font-medium text-foreground mb-3">distance</h4>
-                  <Slider
-                    value={[maxDistance]}
-                    onValueChange={(val) => setMaxDistance(val[0])}
-                    max={20}
-                    step={1}
-                    className="mb-2"
-                  />
-                  <div className="text-sm text-muted-foreground">
-                    within {maxDistance} km
-                  </div>
-                </div>
-
                 <Button variant="outline" className="w-full" onClick={clearFilters}>
                   clear filters
                 </Button>
@@ -206,26 +251,36 @@ const Browse = () => {
 
             {/* Items Grid */}
             <div className="flex-1">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredItems.length > 0 ? (
-                  filteredItems.map((item) => (
-                    <div key={item.id} onClick={() => navigate(`/browse/${item.id}`)} className="cursor-pointer">
-                      <ItemCard variant="browse" item={item} />
-                    </div>
-                  ))
-                ) : (
-                  <div className="col-span-full text-center py-12">
-                    <p className="text-muted-foreground">No items found matching your filters.</p>
+              {isLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {sortedItems.length > 0 ? (
+                      sortedItems.map((item) => (
+                        <div key={item.id} onClick={() => navigate(`/browse/${item.id}`)} className="cursor-pointer">
+                          <ItemCard variant="browse" item={item} />
+                        </div>
+                      ))
+                    ) : (
+                      <div className="col-span-full text-center py-12">
+                        <p className="text-muted-foreground">No items found matching your filters.</p>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
 
-              {/* Load More */}
-              <div className="text-center mt-12">
-                <Button variant="outline" size="lg">
-                  Load More Items
-                </Button>
-              </div>
+                  {/* Load More */}
+                  {sortedItems.length >= 50 && (
+                    <div className="text-center mt-12">
+                      <Button variant="outline" size="lg">
+                        Load More Items
+                      </Button>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           </div>
         </div>
