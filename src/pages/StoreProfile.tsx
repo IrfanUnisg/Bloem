@@ -5,12 +5,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Store, Mail, Phone, MapPin, Clock } from "lucide-react";
+import { Store, Mail, Phone, MapPin, Clock, LogOut } from "lucide-react";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 const StoreProfile = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const { logout } = useAuth();
   const [formData, setFormData] = useState({
     name: "vintage vibes",
     email: "hello@vintagevibes.nl",
@@ -25,6 +29,15 @@ const StoreProfile = () => {
     toast({
       title: "store profile updated",
       description: "your changes have been saved successfully.",
+    });
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    navigate("/");
+    toast({
+      title: "logged out",
+      description: "you have been successfully logged out.",
     });
   };
 
@@ -171,6 +184,25 @@ const StoreProfile = () => {
               <div>
                 <div className="text-3xl font-bold text-primary">156</div>
                 <p className="text-sm text-muted-foreground">active inventory</p>
+              </div>
+            </div>
+          </Card>
+
+          {/* Account Actions */}
+          <Card className="p-6">
+            <h3 className="text-xl font-semibold text-foreground mb-6">
+              account actions
+            </h3>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium text-foreground">log out</p>
+                  <p className="text-sm text-muted-foreground">sign out of your store account</p>
+                </div>
+                <Button variant="outline" onClick={handleLogout}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  log out
+                </Button>
               </div>
             </div>
           </Card>

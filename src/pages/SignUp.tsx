@@ -62,16 +62,24 @@ const SignUp = () => {
       ? `${formData.firstName} ${formData.lastName}`
       : formData.firstName; // Store name for store accounts
 
-    const result = await signup(name, formData.email, formData.password, selectedRole);
+    const result = await signup(
+      name, 
+      formData.email, 
+      formData.password, 
+      selectedRole,
+      formData.phone,
+      selectedRole === "store" ? formData.address : undefined
+    );
     
     if (result.success) {
       toast({
         title: "account created!",
         description: "welcome to bloem. redirecting you now...",
       });
+      // Auto-redirect after successful signup
       setTimeout(() => {
         navigate(selectedRole === "store" ? "/store/inventory" : "/dashboard");
-      }, 800);
+      }, 1000);
     } else {
       toast({
         title: "sign up failed",
