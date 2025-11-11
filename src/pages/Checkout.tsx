@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -101,6 +101,7 @@ function PaymentForm({ orderId, total, onSuccess }: { orderId: string; total: nu
 const Checkout = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const { items, clearCart } = useCart();
   const { toast } = useToast();
@@ -109,10 +110,32 @@ const Checkout = () => {
   const [clientSecret, setClientSecret] = useState<string>("");
   const [isCreatingPayment, setIsCreatingPayment] = useState(false);
 
+  // Check if we're returning from Stripe redirect
+  useEffect(() => {
+    const paymentIntent = searchParams.get('payment_intent');
+    const redirectStatus = searchParams.get('redirect_status');
+    
+    if (paymentIntent && redirectStatus === 'succeeded') {
+      // Payment completed via redirect, go to confirmation
+      const orderIdParam = searchParams.get('orderId') || location.state?.orderId;
+      navigate(`/order-confirmation?orderId=${orderIdParam}&payment_intent=${paymentIntent}`);
+      return;
+    }
+  }, [searchParams, navigate, location.state]);
+
   // Get order ID from location state or create new order
   useEffect(() => {
     const initializeCheckout = async () => {
-      if (!user || items.length === 0) {
+      // Check if we have an order ID from location state (already created order)
+      const existingOrderId = location.state?.orderId;
+
+      if (!user) {
+        navigate("/sign-in");
+        return;
+      }
+
+      // If no existing order and cart is empty, redirect to cart
+      if (!existingOrderId && items.length === 0) {
         toast({
           title: "Cart is empty",
           description: "Please add items to your cart before checking out.",
@@ -125,16 +148,13 @@ const Checkout = () => {
       setIsCreatingPayment(true);
 
       try {
-        // Check if we already have an order ID from cart
-        const existingOrderId = location.state?.orderId;
-
         let currentOrderId = existingOrderId;
 
         // If no existing order, create one
         if (!currentOrderId) {
           // Use item_id (snake_case) from database, not itemId
           const itemIds = items.map(cartItem => (cartItem as any).item_id || cartItem.itemId);
-          const storeId = items[0].item?.store_id || items[0].item?.storeId;
+          const storeId = (items[0].item as any)?.store_id || items[0].item?.storeId;
           
           const order = await orderService.createOrder(user.id, itemIds, storeId);
           currentOrderId = order.id;
