@@ -4,6 +4,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
 }
 
 function generateOrderNumber(): string {
@@ -70,17 +71,32 @@ serve(async (req) => {
         throw new Error('User ID and item IDs required')
       }
 
-      // Fetch all items
-      const { data: items, error: itemsError } = await supabaseClient
+      // Fetch ALL items first (without status filter) to see what's wrong
+      const { data: allItems, error: allItemsError } = await supabaseClient
         .from('items')
         .select('*, store:stores!items_store_id_fkey(*)')
         .in('id', itemIds)
-        .eq('status', 'FOR_SALE')
 
-      if (itemsError) throw itemsError
+      if (allItemsError) throw allItemsError
 
-      if (!items || items.length !== itemIds.length) {
-        throw new Error('Some items are not available')
+      console.log('DEBUG: Requested item IDs:', itemIds)
+      console.log('DEBUG: Found items:', allItems?.length)
+      console.log('DEBUG: Item statuses:', allItems?.map((i: any) => ({ id: i.id, title: i.title, status: i.status })))
+
+      // Filter for FOR_SALE items
+      const items = allItems?.filter((item: any) => item.status === 'FOR_SALE') || []
+
+      console.log('DEBUG: FOR_SALE items:', items.length)
+
+      if (!items || items.length === 0) {
+        const itemStatuses = allItems?.map((i: any) => `${i.title}: ${i.status}`).join(', ')
+        throw new Error(`No items available for purchase. Item statuses: ${itemStatuses}`)
+      }
+
+      if (items.length !== itemIds.length) {
+        const unavailableItems = allItems?.filter((item: any) => item.status !== 'FOR_SALE')
+        const unavailableDetails = unavailableItems?.map((i: any) => `${i.title} (status: ${i.status})`).join(', ')
+        throw new Error(`Some items are not available: ${unavailableDetails}`)
       }
 
       // Verify all items are from the same store

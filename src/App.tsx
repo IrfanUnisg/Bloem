@@ -17,7 +17,10 @@ import ItemDetail from "./pages/ItemDetail";
 import Dashboard from "./pages/Dashboard";
 import Upload from "./pages/Upload";
 import Cart from "./pages/Cart";
+import Checkout from "./pages/Checkout";
 import Wishlist from "./pages/Wishlist";
+import Orders from "./pages/Orders";
+import OrderConfirmation from "./pages/OrderConfirmation";
 import Profile from "./pages/Profile";
 import StoreProfile from "./pages/StoreProfile";
 import StoreInventory from "./pages/store/StoreInventory";
@@ -55,6 +58,9 @@ const App = () => (
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/upload" element={<Upload />} />
               <Route path="/cart" element={<Cart />} />
+              <Route path="/checkout" element={<Checkout />} />
+              <Route path="/orders" element={<Orders />} />
+              <Route path="/order-confirmation" element={<OrderConfirmation />} />
               <Route path="/wishlist" element={<Wishlist />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/store-profile" element={<StoreProfile />} />

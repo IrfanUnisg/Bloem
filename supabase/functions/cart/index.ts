@@ -4,6 +4,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
 }
 
 serve(async (req) => {
@@ -132,7 +133,7 @@ serve(async (req) => {
           .from('cart_items')
           .delete()
           .eq('id', cartItemId)
-          .eq('userId', userId)
+          .eq('user_id', userId)
 
         if (error) throw error
 
@@ -145,7 +146,7 @@ serve(async (req) => {
         const { error } = await supabaseClient
           .from('cart_items')
           .delete()
-          .eq('userId', userId)
+          .eq('user_id', userId)
 
         if (error) throw error
 
