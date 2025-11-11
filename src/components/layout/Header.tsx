@@ -2,17 +2,21 @@ import { Link } from "react-router-dom";
 import { ShoppingBag, Menu, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/contexts/CartContext";
 import logo from "@/assets/bloem-logo.png";
+
 interface HeaderProps {
   variant?: "public" | "authenticated" | "store" | "admin";
 }
+
 export function Header({
   variant = "public"
 }: HeaderProps) {
+  const { user } = useAuth();
   const {
     totalItems
-  } = variant === "authenticated" ? useCart() : {
+  } = variant === "authenticated" && user ? useCart() : {
     totalItems: 0
   };
   return <header className="sticky top-0 z-50 w-full border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
@@ -25,7 +29,7 @@ export function Header({
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-6">
-            {variant === "public" && <>
+            {variant === "public" && !user && <>
                 <Link to="/sign-in">
                   <Button variant="ghost">sign in</Button>
                 </Link>
@@ -74,7 +78,7 @@ export function Header({
             </SheetTrigger>
             <SheetContent side="right" className="w-64">
               <nav className="flex flex-col space-y-4 mt-8">
-                {variant === "public" && <>
+                {variant === "public" && !user && <>
                     <Link to="/sign-in">
                       <Button variant="ghost" className="w-full justify-start">sign in</Button>
                     </Link>

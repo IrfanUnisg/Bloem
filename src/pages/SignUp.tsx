@@ -34,7 +34,14 @@ const SignUp = () => {
   useEffect(() => {
     // Redirect if already logged in
     if (user) {
-      navigate(user.role === "store" ? "/store/inventory" : "/dashboard");
+      if (user.role === "admin") {
+        navigate("/admin/stores");
+      } else if (user.role === "store") {
+        navigate("/store/inventory");
+      } else {
+        navigate("/dashboard");
+      }
+      return;
     }
 
     // Check for role in URL

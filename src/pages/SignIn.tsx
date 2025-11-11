@@ -50,7 +50,11 @@ const SignIn = () => {
           }
         }
         
-        const destination = user.role === "store" ? "/store/inventory" : user.role === "admin" ? "/admin/stores" : "/dashboard";
+        const destination = user.role === "admin" 
+          ? "/admin/stores" 
+          : user.role === "store" 
+          ? "/store/inventory" 
+          : "/dashboard";
         navigate(destination);
       }
     };

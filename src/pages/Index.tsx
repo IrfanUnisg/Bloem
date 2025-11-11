@@ -1,18 +1,33 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { StoreCard } from "@/components/cards/StoreCard";
 import { Upload, ShoppingBag, DollarSign, TrendingUp, MapPin, Heart } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 import { storeService } from "@/services/store.service";
 import type { Store } from "@/services/store.service";
 
 const Index = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const [featuredStores, setFeaturedStores] = useState<Store[]>([]);
 
   useEffect(() => {
+    // Redirect authenticated users to their appropriate dashboard
+    if (user) {
+      if (user.role === "admin") {
+        navigate("/admin/stores");
+      } else if (user.role === "store") {
+        navigate("/store/inventory");
+      } else {
+        navigate("/dashboard");
+      }
+      return;
+    }
+
     // Load featured stores on mount
     const loadStores = async () => {
       const stores = await storeService.getActiveStores();
@@ -20,7 +35,7 @@ const Index = () => {
       setFeaturedStores(stores.slice(0, 3));
     };
     loadStores();
-  }, []);
+  }, [user, navigate]);
 
   const features = [{
     icon: <DollarSign className="h-6 w-6" />,
