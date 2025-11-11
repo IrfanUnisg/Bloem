@@ -5,12 +5,24 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Store, Mail, Phone, MapPin, Clock, LogOut, Loader2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Store, Mail, Phone, MapPin, Clock, LogOut, Loader2, Trash2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { storeService, StoreStats } from "@/services/store.service";
+import { supabase } from "@/lib/supabase";
 import type { Store as StoreType } from "@/services/store.service";
 
 const StoreProfile = () => {
@@ -127,6 +139,45 @@ const StoreProfile = () => {
       title: "logged out",
       description: "you have been successfully logged out.",
     });
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!user || !store) return;
+
+    try {
+      // Delete the store from database
+      const { error: storeError } = await supabase
+        .from('stores')
+        .delete()
+        .eq('id', store.id);
+
+      if (storeError) throw storeError;
+
+      // Delete the user account (this will cascade delete via auth)
+      const { error: userError } = await supabase
+        .from('users')
+        .delete()
+        .eq('id', user.id);
+
+      if (userError) throw userError;
+
+      // Sign out from auth
+      await logout();
+
+      toast({
+        title: "Account deleted",
+        description: "Your store account has been permanently deleted.",
+      });
+
+      navigate("/");
+    } catch (error) {
+      console.error('Error deleting account:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete account. Please contact support.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -341,6 +392,36 @@ const StoreProfile = () => {
                   <LogOut className="mr-2 h-4 w-4" />
                   log out
                 </Button>
+              </div>
+
+              <div className="flex items-center justify-between pt-4 border-t">
+                <div>
+                  <p className="font-medium text-destructive">delete account</p>
+                  <p className="text-sm text-muted-foreground">permanently delete your store and all associated data</p>
+                </div>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive">
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      delete account
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>are you absolutely sure?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        this action cannot be undone. this will permanently delete your store account
+                        and remove all of your data from our servers, including all items, orders, and store information.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleDeleteAccount} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                        delete account
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
             </div>
           </Card>
