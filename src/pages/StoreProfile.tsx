@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -227,24 +226,13 @@ const StoreProfile = () => {
           <div className="space-y-6">
             {/* Store Header */}
             <Card className="p-6">
-              <div className="flex items-center space-x-6">
-                <Avatar className="h-24 w-24">
-                  <AvatarImage src={store.logo || "/placeholder.svg"} />
-                  <AvatarFallback className="text-2xl">
-                    <Store className="h-12 w-12" />
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <h2 className="text-2xl font-bold text-foreground">
-                    {formData.name}
-                  </h2>
-                  <p className="text-muted-foreground">
-                    partner since {new Date(store.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-                  </p>
-                  <Button variant="outline" size="sm" className="mt-2">
-                    change photo
-                  </Button>
-                </div>
+              <div>
+                <h2 className="text-2xl font-bold text-foreground">
+                  {formData.name}
+                </h2>
+                <p className="text-muted-foreground">
+                  partner since {new Date(store.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                </p>
               </div>
             </Card>
 

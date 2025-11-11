@@ -3,7 +3,6 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { User, Mail, Phone, MapPin, CreditCard, Trash2, LogOut, Loader2 } from "lucide-react";
@@ -173,25 +172,13 @@ const Profile = () => {
           <div className="space-y-6">
             {/* Profile Header */}
             <Card className="p-6">
-              <div className="flex items-center space-x-6">
-                <Avatar className="h-24 w-24">
-                  <AvatarImage src={profile.avatar || "/placeholder.svg"} />
-                  <AvatarFallback className="text-2xl">
-                    {formData.firstName?.[0]?.toUpperCase() || 'U'}
-                    {formData.lastName?.[0]?.toUpperCase() || 'S'}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <h2 className="text-2xl font-bold text-foreground">
-                    {formData.firstName} {formData.lastName}
-                  </h2>
-                  <p className="text-muted-foreground">
-                    member since {new Date(profile.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-                  </p>
-                  <Button variant="outline" size="sm" className="mt-2">
-                    change photo
-                  </Button>
-                </div>
+              <div>
+                <h2 className="text-2xl font-bold text-foreground">
+                  {formData.firstName} {formData.lastName}
+                </h2>
+                <p className="text-muted-foreground">
+                  member since {new Date(profile.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                </p>
               </div>
             </Card>
 

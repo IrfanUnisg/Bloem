@@ -14,11 +14,8 @@ export function Header({
   variant = "public"
 }: HeaderProps) {
   const { user } = useAuth();
-  const {
-    totalItems
-  } = variant === "authenticated" && user ? useCart() : {
-    totalItems: 0
-  };
+  const { totalItems } = useCart();
+  
   return <header className="sticky top-0 z-50 w-full border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">

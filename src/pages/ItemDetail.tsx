@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { itemService } from "@/services/item.service";
+import { wishlistService } from "@/services/wishlist.service";
 import { ItemWithRelations } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, MapPin, Clock, Heart, ShoppingBag, Loader2 } from "lucide-react";
@@ -22,12 +23,30 @@ const ItemDetail = () => {
   const [item, setItem] = useState<ItemWithRelations | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(0);
+  const [isInWishlist, setIsInWishlist] = useState(false);
+  const [isTogglingWishlist, setIsTogglingWishlist] = useState(false);
 
   useEffect(() => {
     if (id) {
       fetchItem(id);
     }
   }, [id]);
+
+  useEffect(() => {
+    if (user && item) {
+      checkWishlistStatus();
+    }
+  }, [user, item]);
+
+  const checkWishlistStatus = async () => {
+    if (!user || !item) return;
+    try {
+      const inWishlist = await wishlistService.isInWishlist(user.id, item.id);
+      setIsInWishlist(inWishlist);
+    } catch (error) {
+      console.error("Error checking wishlist status:", error);
+    }
+  };
 
   const fetchItem = async (itemId: string) => {
     setIsLoading(true);
@@ -78,6 +97,40 @@ const ItemDetail = () => {
         description: error.message || "Failed to add item to cart.",
         variant: "destructive",
       });
+    }
+  };
+
+  const handleToggleWishlist = async () => {
+    if (!user) {
+      toast({
+        title: "Sign in required",
+        description: "Please sign in to add items to your wishlist.",
+        variant: "destructive",
+      });
+      navigate("/signin");
+      return;
+    }
+
+    if (!item) return;
+
+    try {
+      setIsTogglingWishlist(true);
+      const nowInWishlist = await wishlistService.toggleWishlist(user.id, item.id);
+      setIsInWishlist(nowInWishlist);
+      toast({
+        title: nowInWishlist ? "Added to wishlist" : "Removed from wishlist",
+        description: nowInWishlist 
+          ? `${item.title} has been added to your wishlist.`
+          : `${item.title} has been removed from your wishlist.`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update wishlist.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsTogglingWishlist(false);
     }
   };
 
@@ -191,6 +244,19 @@ const ItemDetail = () => {
                   <Button size="lg" className="flex-1" onClick={handleAddToCart}>
                     <ShoppingBag className="mr-2 h-5 w-5" />
                     Add to Cart
+                  </Button>
+                  <Button 
+                    size="lg" 
+                    variant={isInWishlist ? "default" : "outline"}
+                    onClick={handleToggleWishlist}
+                    disabled={isTogglingWishlist}
+                    className="px-6"
+                  >
+                    {isTogglingWishlist ? (
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                    ) : (
+                      <Heart className={`h-5 w-5 ${isInWishlist ? 'fill-current' : ''}`} />
+                    )}
                   </Button>
                 </div>
               ) : (
