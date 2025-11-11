@@ -71,6 +71,29 @@ const Dashboard = () => {
     }
   };
 
+  const handleDeleteItem = async (itemId: string) => {
+    if (!confirm("Are you sure you want to delete this item? This action cannot be undone.")) {
+      return;
+    }
+
+    try {
+      await itemService.deleteItem(itemId);
+      toast({
+        title: "Item deleted",
+        description: "Your item has been successfully removed.",
+      });
+      // Refresh items list
+      await fetchUserItems();
+    } catch (error) {
+      console.error("Error deleting item:", error);
+      toast({
+        title: "Error deleting item",
+        description: "Failed to delete the item. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const filteredItems = items.filter(item => 
     filterStatus === "all" ? true : item.status === filterStatus
   );
@@ -132,16 +155,27 @@ const Dashboard = () => {
             ) : filteredItems.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredItems.map(item => (
-                  <ItemCard 
-                    key={item.id} 
-                    variant="dashboard" 
-                    id={item.id}
-                    title={item.title}
-                    price={item.price}
-                    status={item.status.toLowerCase().replace('_', ' ')}
-                    storeName={item.store?.name || "Unknown Store"}
-                    image={item.images?.[0]}
-                  />
+                  <div key={item.id} className="relative">
+                    <ItemCard 
+                      variant="dashboard" 
+                      id={item.id}
+                      title={item.title}
+                      price={item.price}
+                      status={item.status.toLowerCase().replace('_', ' ')}
+                      storeName={item.store?.name || "Unknown Store"}
+                      image={item.images?.[0]}
+                    />
+                    {item.status === 'PENDING_DROPOFF' && (
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        className="absolute top-2 right-2 z-10"
+                        onClick={() => handleDeleteItem(item.id)}
+                      >
+                        Delete
+                      </Button>
+                    )}
+                  </div>
                 ))}
               </div>
             ) : (

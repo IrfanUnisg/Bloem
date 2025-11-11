@@ -68,18 +68,32 @@ const SignUp = () => {
       formData.password, 
       selectedRole,
       formData.phone,
-      selectedRole === "store" ? formData.address : undefined
+      selectedRole === "store" ? formData.address : undefined,
+      selectedRole === "store" ? formData.businessHours : undefined,
+      selectedRole === "store" ? formData.ownerName : undefined
     );
     
     if (result.success) {
-      toast({
-        title: "account created!",
-        description: "welcome to bloem. redirecting you now...",
-      });
-      // Auto-redirect after successful signup
-      setTimeout(() => {
-        navigate(selectedRole === "store" ? "/store/inventory" : "/dashboard");
-      }, 1000);
+      if (selectedRole === "store") {
+        toast({
+          title: "Store registration submitted!",
+          description: "Your store application is pending admin approval. You'll be notified once approved.",
+          duration: 5000,
+        });
+        // Redirect to sign-in page instead of dashboard for stores
+        setTimeout(() => {
+          navigate("/sign-in");
+        }, 2000);
+      } else {
+        toast({
+          title: "account created!",
+          description: "welcome to bloem. redirecting you now...",
+        });
+        // Auto-redirect after successful signup
+        setTimeout(() => {
+          navigate("/dashboard");
+        }, 1000);
+      }
     } else {
       toast({
         title: "sign up failed",

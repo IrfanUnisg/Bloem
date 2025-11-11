@@ -6,34 +6,116 @@ import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { User, Mail, Phone, MapPin, CreditCard, Trash2, LogOut } from "lucide-react";
-import { useState } from "react";
+import { User, Mail, Phone, MapPin, CreditCard, Trash2, LogOut, Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { userProfileService, UserProfile, UserStats } from "@/services/user-profile.service";
 
 const Profile = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [stats, setStats] = useState<UserStats>({
+    totalEarnings: 0,
+    itemsSold: 0,
+    itemsActive: 0,
+  });
   const [formData, setFormData] = useState({
-    firstName: "anna",
-    lastName: "müller",
-    email: "anna.mueller@example.ch",
-    phone: "+41 79 123 45 67",
-    address: "bahnhofstrasse 45, 8001 zürich",
-    topSize: "m",
-    bottomSize: "m",
-    shoeSize: "39",
-    iban: "CH93 0076 2011 6238 5295 7",
-    cardNumber: "•••• •••• •••• 4242",
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    address: "",
+    topSize: "",
+    bottomSize: "",
+    shoeSize: "",
+    iban: "",
   });
 
-  const handleSave = () => {
-    toast({
-      title: "profile updated",
-      description: "your changes have been saved successfully.",
-    });
+  useEffect(() => {
+    if (user) {
+      fetchUserData();
+    }
+  }, [user]);
+
+  const fetchUserData = async () => {
+    if (!user) return;
+
+    setIsLoading(true);
+    try {
+      const [userProfile, userStats] = await Promise.all([
+        userProfileService.getUserProfile(user.id),
+        userProfileService.getUserStats(user.id),
+      ]);
+
+      if (userProfile) {
+        setProfile(userProfile);
+        // Split name into first and last name
+        const nameParts = userProfile.name?.split(' ') || ['', ''];
+        setFormData({
+          firstName: nameParts[0] || '',
+          lastName: nameParts.slice(1).join(' ') || '',
+          email: userProfile.email,
+          phone: userProfile.phone || '',
+          address: userProfile.address || '',
+          topSize: userProfile.topSize || '',
+          bottomSize: userProfile.bottomSize || '',
+          shoeSize: userProfile.shoeSize || '',
+          iban: userProfile.bankAccount || '',
+        });
+      }
+      setStats(userStats);
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load profile data.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!user || !profile) return;
+
+    setIsSaving(true);
+    try {
+      const updatedProfile = await userProfileService.updateUserProfile(user.id, {
+        name: `${formData.firstName} ${formData.lastName}`.trim(),
+        phone: formData.phone,
+        address: formData.address,
+        topSize: formData.topSize,
+        bottomSize: formData.bottomSize,
+        shoeSize: formData.shoeSize,
+        bankAccount: formData.iban,
+      });
+
+      if (updatedProfile) {
+        setProfile(updatedProfile);
+        toast({
+          title: "profile updated",
+          description: "your changes have been saved successfully.",
+        });
+      } else {
+        throw new Error('Failed to update profile');
+      }
+    } catch (error) {
+      console.error('Error saving profile:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save changes.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleLogout = () => {
@@ -45,16 +127,33 @@ const Profile = () => {
     });
   };
 
-  const handleDeleteAccount = () => {
-    toast({
-      title: "account deleted",
-      description: "your account has been permanently deleted.",
-      variant: "destructive",
-    });
-    setTimeout(() => {
-      logout();
-      navigate("/");
-    }, 1500);
+  const handleDeleteAccount = async () => {
+    if (!user) return;
+
+    try {
+      const success = await userProfileService.deleteAccount(user.id);
+      
+      if (success) {
+        toast({
+          title: "account deleted",
+          description: "your account has been permanently deleted.",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          logout();
+          navigate("/");
+        }, 1500);
+      } else {
+        throw new Error('Failed to delete account');
+      }
+    } catch (error) {
+      console.error('Error deleting account:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete account.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -62,25 +161,39 @@ const Profile = () => {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 max-w-4xl">
         <h1 className="text-3xl font-bold text-foreground mb-8">my profile</h1>
 
-        <div className="space-y-6">
-          {/* Profile Header */}
+        {isLoading ? (
+          <div className="flex justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        ) : !profile ? (
           <Card className="p-6">
-            <div className="flex items-center space-x-6">
-              <Avatar className="h-24 w-24">
-                <AvatarImage src="/placeholder.svg" />
-                <AvatarFallback className="text-2xl">es</AvatarFallback>
-              </Avatar>
-              <div>
-                <h2 className="text-2xl font-bold text-foreground">
-                  {formData.firstName} {formData.lastName}
-                </h2>
-                <p className="text-muted-foreground">member since january 2025</p>
-                <Button variant="outline" size="sm" className="mt-2">
-                  change photo
-                </Button>
-              </div>
-            </div>
+            <p className="text-center text-muted-foreground">Unable to load profile data.</p>
           </Card>
+        ) : (
+          <div className="space-y-6">
+            {/* Profile Header */}
+            <Card className="p-6">
+              <div className="flex items-center space-x-6">
+                <Avatar className="h-24 w-24">
+                  <AvatarImage src={profile.avatar || "/placeholder.svg"} />
+                  <AvatarFallback className="text-2xl">
+                    {formData.firstName?.[0]?.toUpperCase() || 'U'}
+                    {formData.lastName?.[0]?.toUpperCase() || 'S'}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <h2 className="text-2xl font-bold text-foreground">
+                    {formData.firstName} {formData.lastName}
+                  </h2>
+                  <p className="text-muted-foreground">
+                    member since {new Date(profile.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                  </p>
+                  <Button variant="outline" size="sm" className="mt-2">
+                    change photo
+                  </Button>
+                </div>
+              </div>
+            </Card>
 
           {/* Personal Information */}
           <Card className="p-6">
@@ -201,7 +314,16 @@ const Profile = () => {
             </div>
 
             <div className="flex justify-end mt-6">
-              <Button onClick={handleSave}>save changes</Button>
+              <Button onClick={handleSave} disabled={isSaving}>
+                {isSaving ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    saving...
+                  </>
+                ) : (
+                  'save changes'
+                )}
+              </Button>
             </div>
           </Card>
 
@@ -223,25 +345,23 @@ const Profile = () => {
                     placeholder="CH93 0076 2011 6238 5295 7"
                   />
                 </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="cardNumber">payment card</Label>
-                <div className="relative">
-                  <CreditCard className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="cardNumber"
-                    value={formData.cardNumber}
-                    onChange={(e) => setFormData({ ...formData, cardNumber: e.target.value })}
-                    className="pl-10"
-                    placeholder="•••• •••• •••• 4242"
-                  />
-                </div>
+                <p className="text-xs text-muted-foreground">
+                  This account will be used for receiving payouts from sold items
+                </p>
               </div>
             </div>
 
             <div className="flex justify-end mt-6">
-              <Button onClick={handleSave}>save payment info</Button>
+              <Button onClick={handleSave} disabled={isSaving}>
+                {isSaving ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    saving...
+                  </>
+                ) : (
+                  'save payment info'
+                )}
+              </Button>
             </div>
           </Card>
 
@@ -302,20 +422,21 @@ const Profile = () => {
             </h3>
             <div className="grid grid-cols-3 gap-6 text-center">
               <div>
-                <div className="text-3xl font-bold text-primary">24</div>
+                <div className="text-3xl font-bold text-primary">{stats.itemsSold}</div>
                 <p className="text-sm text-muted-foreground">items sold</p>
               </div>
               <div>
-                <div className="text-3xl font-bold text-primary">€486</div>
+                <div className="text-3xl font-bold text-primary">€{stats.totalEarnings.toFixed(2)}</div>
                 <p className="text-sm text-muted-foreground">total earnings</p>
               </div>
               <div>
-                <div className="text-3xl font-bold text-primary">8</div>
+                <div className="text-3xl font-bold text-primary">{stats.itemsActive}</div>
                 <p className="text-sm text-muted-foreground">active listings</p>
               </div>
             </div>
           </Card>
         </div>
+        )}
       </div>
     </DashboardLayout>
   );

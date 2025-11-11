@@ -8,6 +8,9 @@ DECLARE
   user_role TEXT;
   store_name TEXT;
   store_address TEXT;
+  store_hours TEXT;
+  store_owner_name TEXT;
+  store_city TEXT;
 BEGIN
   -- Extract role from metadata
   user_role := COALESCE(NEW.raw_user_meta_data->>'role', 'seller');
@@ -28,6 +31,20 @@ BEGIN
   IF user_role = 'store' THEN
     store_name := COALESCE(NEW.raw_user_meta_data->>'name', split_part(NEW.email, '@', 1));
     store_address := COALESCE(NEW.raw_user_meta_data->>'address', 'Address not provided');
+    store_hours := COALESCE(NEW.raw_user_meta_data->>'hours', 'Mon-Sat: 10am-6pm');
+    store_owner_name := COALESCE(NEW.raw_user_meta_data->>'owner_name', 'Owner name not provided');
+    
+    -- Try to extract city from address (assumes format: "Street, ZIP City")
+    -- If address contains a comma, take the part after the last comma
+    IF POSITION(',' IN store_address) > 0 THEN
+      store_city := TRIM(REGEXP_REPLACE(
+        SUBSTRING(store_address FROM POSITION(',' IN store_address) + 1),
+        '^[0-9]+\s*',
+        ''
+      ));
+    ELSE
+      store_city := 'Not specified';
+    END IF;
     
     INSERT INTO public.stores (
       id,
@@ -36,6 +53,7 @@ BEGIN
       phone,
       address,
       city,
+      hours,
       description,
       verified,
       active,
@@ -49,8 +67,9 @@ BEGIN
       NEW.email,
       COALESCE(NEW.raw_user_meta_data->>'phone', ''),
       store_address,
-      'Amsterdam', -- Default city, can be updated later
-      'New store pending verification',
+      store_city,
+      store_hours,
+      'New store - pending admin verification. Owner: ' || store_owner_name,
       false, -- Not verified by default - needs admin approval
       false, -- Not active until verified
       NEW.id,
