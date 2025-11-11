@@ -260,9 +260,9 @@ export const itemService = {
         .from('items')
         .update({ 
           status,
-          updatedAt: new Date().toISOString(),
-          ...(status === 'SOLD' && { soldAt: new Date().toISOString() }),
-          ...(status === 'FOR_SALE' && { listedAt: new Date().toISOString() }),
+          updated_at: new Date().toISOString(),
+          ...(status === 'SOLD' && { sold_at: new Date().toISOString() }),
+          ...(status === 'FOR_SALE' && { listed_at: new Date().toISOString() }),
         })
         .eq('id', itemId)
         .select()

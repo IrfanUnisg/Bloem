@@ -12,7 +12,7 @@ interface AuthUser extends SupabaseUser {
 interface AuthContextType {
   user: AuthUser | null;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  signup: (name: string, email: string, password: string, role: "seller" | "store", phone?: string, address?: string) => Promise<{ success: boolean; error?: string }>;
+  signup: (name: string, email: string, password: string, role: "seller" | "store", phone?: string, address?: string, hours?: string, ownerName?: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   isLoading: boolean;
 }
@@ -106,7 +106,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     password: string, 
     role: "seller" | "store",
     phone?: string,
-    address?: string
+    address?: string,
+    hours?: string,
+    ownerName?: string
   ): Promise<{ success: boolean; error?: string }> => {
     setIsLoading(true);
     
@@ -118,6 +120,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         phone,
         address,
         role,
+        hours,
+        ownerName,
       });
       
       if (authUser) {

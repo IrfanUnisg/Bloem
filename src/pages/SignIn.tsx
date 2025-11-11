@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Header } from "@/components/layout/Header";
 import { useAuth } from "@/contexts/AuthContext";
+import { storeService } from "@/services/store.service";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
@@ -11,7 +12,7 @@ import { Label } from "@/components/ui/label";
 
 const SignIn = () => {
   const navigate = useNavigate();
-  const { login, isLoading, user } = useAuth();
+  const { login, logout, isLoading, user } = useAuth();
   const { toast } = useToast();
   const [formData, setFormData] = useState({
     email: "",
@@ -20,11 +21,42 @@ const SignIn = () => {
 
   useEffect(() => {
     // Redirect if already logged in
-    if (user) {
-      const destination = user.role === "store" ? "/store/inventory" : user.role === "admin" ? "/admin/stores" : "/dashboard";
-      navigate(destination);
-    }
-  }, [user, navigate]);
+    const checkStoreAndRedirect = async () => {
+      if (user) {
+        // Check if user is a store owner and if their store is approved
+        if (user.role === "store") {
+          const store = await storeService.getStoreByOwnerId(user.id);
+          
+          if (!store) {
+            toast({
+              title: "Store not found",
+              description: "Your store application is being processed. Please contact support if this persists.",
+              variant: "destructive",
+            });
+            await logout();
+            return;
+          }
+          
+          if (!store.verified || !store.active) {
+            toast({
+              title: "Store pending approval",
+              description: "Your store application is pending admin approval. You'll be notified once approved.",
+              variant: "destructive",
+              duration: 5000,
+            });
+            // Log them out since they can't use the system yet
+            await logout();
+            return;
+          }
+        }
+        
+        const destination = user.role === "store" ? "/store/inventory" : user.role === "admin" ? "/admin/stores" : "/dashboard";
+        navigate(destination);
+      }
+    };
+    
+    checkStoreAndRedirect();
+  }, [user, navigate, logout, toast]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,7 +68,7 @@ const SignIn = () => {
         title: "Welcome back!",
         description: "You've successfully signed in.",
       });
-      // Navigation is handled by the useEffect above
+      // Navigation and store check is handled by the useEffect above
     } else {
       toast({
         title: "Sign in failed",

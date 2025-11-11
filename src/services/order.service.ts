@@ -239,7 +239,7 @@ export const orderService = {
         .from('orders')
         .update({
           status: 'CANCELLED',
-          updatedAt: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
         })
         .eq('id', orderId)
         .select()
@@ -250,18 +250,18 @@ export const orderService = {
       // Get order items to restore item statuses
       const { data: orderItems } = await supabase
         .from('order_items')
-        .select('itemId')
-        .eq('orderId', orderId);
+        .select('item_id')
+        .eq('order_id', orderId);
 
       if (orderItems && orderItems.length > 0) {
-        const itemIds = orderItems.map(oi => oi.itemId);
+        const itemIds = orderItems.map(oi => oi.item_id);
         
         // Restore items to FOR_SALE status
         await supabase
           .from('items')
           .update({
             status: 'FOR_SALE',
-            updatedAt: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
           })
           .in('id', itemIds);
 
@@ -271,7 +271,7 @@ export const orderService = {
           .update({
             status: 'CANCELLED',
           })
-          .eq('orderId', orderId);
+          .eq('order_id', orderId);
       }
 
       return order as Order;

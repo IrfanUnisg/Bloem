@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
@@ -5,7 +6,22 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { StoreCard } from "@/components/cards/StoreCard";
 import { Upload, ShoppingBag, DollarSign, TrendingUp, MapPin, Heart } from "lucide-react";
+import { storeService } from "@/services/store.service";
+import type { Store } from "@/services/store.service";
+
 const Index = () => {
+  const [featuredStores, setFeaturedStores] = useState<Store[]>([]);
+
+  useEffect(() => {
+    // Load featured stores on mount
+    const loadStores = async () => {
+      const stores = await storeService.getActiveStores();
+      // Take first 3 stores as featured
+      setFeaturedStores(stores.slice(0, 3));
+    };
+    loadStores();
+  }, []);
+
   const features = [{
     icon: <DollarSign className="h-6 w-6" />,
     title: "For Sellers",
@@ -19,22 +35,7 @@ const Index = () => {
     title: "For Stores",
     description: "Digital inventory management, automated sales tracking, and powerful marketing tools."
   }];
-  const mockStores = [{
-    name: "Vintage Vibes",
-    address: "123 Main St, Amsterdam",
-    distance: "0.5 km",
-    hours: "Mon-Sat: 10AM-7PM"
-  }, {
-    name: "Retro Revival",
-    address: "456 Canal Street, Amsterdam",
-    distance: "1.2 km",
-    hours: "Tue-Sun: 11AM-8PM"
-  }, {
-    name: "Thrift Haven",
-    address: "789 Market Lane, Amsterdam",
-    distance: "2.0 km",
-    hours: "Daily: 9AM-6PM"
-  }];
+
   return <div className="min-h-screen flex flex-col">
       <Header variant="public" />
       
@@ -158,7 +159,22 @@ const Index = () => {
           </div>
 
           <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            {mockStores.map((store, index) => <StoreCard key={index} {...store} />)}
+            {featuredStores.length > 0 ? (
+              featuredStores.map((store, index) => (
+                <StoreCard 
+                  key={store.id} 
+                  name={store.name}
+                  address={store.address}
+                  distance="nearby"
+                  hours={store.hours || "See store for hours"}
+                />
+              ))
+            ) : (
+              // Fallback display while loading
+              <div className="col-span-3 text-center text-muted-foreground py-8">
+                Loading featured stores...
+              </div>
+            )}
           </div>
 
           <div className="text-center mt-8">
