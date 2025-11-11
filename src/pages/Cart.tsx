@@ -16,7 +16,6 @@ const Cart = () => {
   const { user } = useAuth();
   const { items, removeFromCart, isLoading, refreshCart } = useCart();
   const { toast } = useToast();
-  const [isCreatingOrder, setIsCreatingOrder] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -43,30 +42,7 @@ const Cart = () => {
   const handleCheckout = async () => {
     if (!user || items.length === 0) return;
 
-    setIsCreatingOrder(true);
-    try {
-      const itemIds = items.map(cartItem => cartItem.itemId);
-      const storeId = items[0].item?.storeId;
-
-      // Create order
-      const order = await orderService.createOrder(user.id, itemIds, storeId);
-
-      toast({
-        title: "Order created!",
-        description: `Order ${order.orderNumber} has been created. Items are reserved for pickup.`,
-      });
-
-      // Navigate to orders page or order detail
-      navigate(`/dashboard`);
-    } catch (error: any) {
-      toast({
-        title: "Checkout failed",
-        description: error.message || "Failed to create order. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsCreatingOrder(false);
-    }
+    navigate('/checkout', { state: { items } });
   };
 
   const isEmpty = items.length === 0;
@@ -187,20 +163,12 @@ const Cart = () => {
                   className="w-full"
                   size="lg"
                   onClick={handleCheckout}
-                  disabled={isCreatingOrder}
                 >
-                  {isCreatingOrder ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Creating Order...
-                    </>
-                  ) : (
-                    "Reserve for Pickup"
-                  )}
+                  Proceed to Checkout
                 </Button>
 
                 <p className="text-xs text-muted-foreground text-center mt-4">
-                  Items will be reserved for in-store pickup. No payment required until you collect your items.
+                  Secure payment powered by Stripe
                 </p>
               </Card>
             </div>

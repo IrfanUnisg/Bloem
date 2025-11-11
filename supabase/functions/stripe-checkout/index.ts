@@ -5,6 +5,7 @@ import Stripe from 'https://esm.sh/stripe@14.5.0?target=deno'
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
 serve(async (req) => {
@@ -14,7 +15,8 @@ serve(async (req) => {
 
   try {
     const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
-      apiVersion: '2023-10-16',
+      apiVersion: '2024-11-20.acacia',
+      httpClient: Stripe.createFetchHttpClient(),
     })
 
     const supabaseClient = createClient(
@@ -52,8 +54,25 @@ serve(async (req) => {
       throw new Error('Order not found')
     }
 
-    if (order.status !== 'RESERVED') {
-      throw new Error('Order is not in RESERVED status')
+    // Check if payment intent already exists
+    if (order.payment_intent_id) {
+      // Retrieve existing payment intent
+      const existingIntent = await stripe.paymentIntents.retrieve(order.payment_intent_id)
+      
+      if (existingIntent.status === 'succeeded') {
+        throw new Error('Order has already been paid')
+      }
+
+      return new Response(
+        JSON.stringify({
+          clientSecret: existingIntent.client_secret,
+          paymentIntentId: existingIntent.id,
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        }
+      )
     }
 
     // Create Stripe Payment Intent
@@ -63,10 +82,13 @@ serve(async (req) => {
       metadata: {
         orderId: order.id,
         orderNumber: order.order_number,
-        storeId: order.storeId,
-        buyerId: order.buyerId,
+        storeId: order.store_id,
+        buyerId: order.buyer_id,
       },
       description: `Bloem Order ${order.order_number}`,
+      automatic_payment_methods: {
+        enabled: true,
+      },
     })
 
     // Update order with payment intent ID

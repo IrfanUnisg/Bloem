@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Link } from "react-router-dom";
-import { MockItem } from "@/data/mockItems";
+import { ItemWithRelations } from "@/types";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { wishlistService } from "@/services/wishlist.service";
@@ -13,7 +13,7 @@ import { useNavigate } from "react-router-dom";
 
 interface ItemCardProps {
   variant?: "browse" | "dashboard" | "store";
-  item?: MockItem;
+  item?: ItemWithRelations;
   id?: string;
   image?: string;
   title?: string;
