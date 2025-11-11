@@ -137,11 +137,11 @@ class WishlistService {
       .select("id")
       .eq("user_id", userId)
       .eq("item_id", itemId)
-      .single();
+      .maybeSingle();
 
-    if (error && error.code !== 'PGRST116') { // PGRST116 is "not found" error
+    if (error) {
       console.error("Error checking wishlist:", error);
-      throw error;
+      return false;
     }
 
     return !!data;

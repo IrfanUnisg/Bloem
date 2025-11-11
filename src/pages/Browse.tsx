@@ -17,7 +17,8 @@ import { useToast } from "@/hooks/use-toast";
 const Browse = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { totalItems } = user ? useCart() : { totalItems: 0 };
+  const cart = useCart();
+  const totalItems = user ? cart.totalItems : 0;
   const { toast } = useToast();
 
   const [items, setItems] = useState<ItemWithRelations[]>([]);

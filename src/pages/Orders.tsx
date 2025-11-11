@@ -116,7 +116,9 @@ const Orders = () => {
                       </h3>
                       <p className="text-sm text-muted-foreground flex items-center gap-1">
                         <Calendar className="h-3 w-3" />
-                        {format(new Date(order.createdAt), "MMM dd, yyyy")}
+                        {order.createdAt || (order as any).created_at 
+                          ? format(new Date(order.createdAt || (order as any).created_at), "MMM dd, yyyy")
+                          : "N/A"}
                       </p>
                     </div>
                   </div>
