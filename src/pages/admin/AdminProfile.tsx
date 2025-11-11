@@ -3,7 +3,6 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { User, Mail, Phone, Shield, LogOut, Key, Activity } from "lucide-react";
@@ -55,29 +54,18 @@ const AdminProfile = () => {
         <div className="space-y-6">
           {/* Profile Header */}
           <Card className="p-6">
-            <div className="flex items-center space-x-6">
-              <Avatar className="h-24 w-24">
-                <AvatarImage src="/placeholder.svg" />
-                <AvatarFallback className="text-2xl bg-primary/10">
-                  <Shield className="h-12 w-12 text-primary" />
-                </AvatarFallback>
-              </Avatar>
-              <div>
-                <div className="flex items-center gap-3 mb-1">
-                  <h2 className="text-2xl font-bold text-foreground">
-                    {formData.name}
-                  </h2>
-                  <Badge variant="default" className="bg-primary">
-                    <Shield className="h-3 w-3 mr-1" />
-                    {formData.role}
-                  </Badge>
-                </div>
-                <p className="text-muted-foreground">administrator since january 2024</p>
-                <p className="text-sm text-muted-foreground">{formData.department}</p>
-                <Button variant="outline" size="sm" className="mt-2">
-                  change photo
-                </Button>
+            <div>
+              <div className="flex items-center gap-3 mb-1">
+                <h2 className="text-2xl font-bold text-foreground">
+                  {formData.name}
+                </h2>
+                <Badge variant="default" className="bg-primary">
+                  <Shield className="h-3 w-3 mr-1" />
+                  {formData.role}
+                </Badge>
               </div>
+              <p className="text-muted-foreground">administrator since january 2024</p>
+              <p className="text-sm text-muted-foreground">{formData.department}</p>
             </div>
           </Card>
 

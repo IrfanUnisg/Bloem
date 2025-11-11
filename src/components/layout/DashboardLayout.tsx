@@ -1,7 +1,7 @@
 import { ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Header } from "./Header";
-import { Home, ShoppingBag, Upload, DollarSign, Settings } from "lucide-react";
+import { Home, ShoppingBag, Upload, Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface DashboardLayoutProps {
@@ -14,6 +14,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const navItems = [
     { icon: Home, label: "dashboard", href: "/dashboard" },
     { icon: ShoppingBag, label: "browse", href: "/browse" },
+    { icon: Heart, label: "wishlist", href: "/wishlist" },
     { icon: Upload, label: "upload item", href: "/upload" },
   ];
 
@@ -54,7 +55,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
       {/* Bottom Navigation - Mobile */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t z-40">
-        <div className="grid grid-cols-5 gap-1 p-2">
+        <div className="grid grid-cols-4 gap-1 p-2">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.href || location.pathname + location.search === item.href;

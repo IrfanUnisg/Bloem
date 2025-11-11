@@ -17,6 +17,7 @@ import ItemDetail from "./pages/ItemDetail";
 import Dashboard from "./pages/Dashboard";
 import Upload from "./pages/Upload";
 import Cart from "./pages/Cart";
+import Wishlist from "./pages/Wishlist";
 import Profile from "./pages/Profile";
 import StoreProfile from "./pages/StoreProfile";
 import StoreInventory from "./pages/store/StoreInventory";
@@ -54,6 +55,7 @@ const App = () => (
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/upload" element={<Upload />} />
               <Route path="/cart" element={<Cart />} />
+              <Route path="/wishlist" element={<Wishlist />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/store-profile" element={<StoreProfile />} />
               <Route path="/store/inventory" element={<StoreInventory />} />
