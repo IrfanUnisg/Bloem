@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { Header } from "@/components/layout/Header";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { ItemCard } from "@/components/cards/ItemCard";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -123,51 +123,48 @@ const Browse = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Header variant={user ? "authenticated" : "public"} />
-      
-      <main className="flex-1">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h1 className="text-3xl font-bold text-foreground mb-2">browse inventory</h1>
-              <p className="text-muted-foreground">
-                {isLoading ? "Loading..." : `${sortedItems.length} unique finds from local thrift stores`}
-              </p>
-            </div>
-            <div className="flex items-center gap-4">
-              {user && (
-                <Link to="/cart" className="relative">
-                  <ShoppingBag className="h-6 w-6 text-foreground hover:text-primary transition-colors" />
-                  {totalItems > 0 && (
-                    <span className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-accent text-xs flex items-center justify-center font-medium">
-                      {totalItems}
-                    </span>
-                  )}
-                </Link>
-              )}
-              <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger className="w-48">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="newest">newest first</SelectItem>
-                  <SelectItem value="price-low">price: low to high</SelectItem>
-                  <SelectItem value="price-high">price: high to low</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+    <DashboardLayout>
+      <div className="p-6 md:p-8">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground mb-2">browse inventory</h1>
+            <p className="text-muted-foreground">
+              {isLoading ? "Loading..." : `${sortedItems.length} unique finds from local thrift stores`}
+            </p>
           </div>
+          <div className="flex items-center gap-4">
+            {user && (
+              <Link to="/cart" className="relative">
+                <ShoppingBag className="h-6 w-6 text-foreground hover:text-primary transition-colors" />
+                {totalItems > 0 && (
+                  <span className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-accent text-xs flex items-center justify-center font-medium">
+                    {totalItems}
+                  </span>
+                )}
+              </Link>
+            )}
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className="w-48">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="newest">newest first</SelectItem>
+                <SelectItem value="price-low">price: low to high</SelectItem>
+                <SelectItem value="price-high">price: high to low</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
 
-          <div className="flex gap-8">
-            {/* Filters Sidebar */}
-            <aside className="hidden lg:block w-64 shrink-0">
-              <div className="sticky top-24 space-y-6">
-                <div>
-                  <h3 className="font-semibold text-foreground mb-4 flex items-center">
-                    <Filter className="h-4 w-4 mr-2" />
-                    Filters
+        <div className="flex gap-8">
+          {/* Filters Sidebar */}
+          <aside className="hidden lg:block w-64 shrink-0">
+            <div className="sticky top-24 space-y-6">
+              <div>
+                <h3 className="font-semibold text-foreground mb-4 flex items-center">
+                  <Filter className="h-4 w-4 mr-2" />
+                  Filters
                   </h3>
                 </div>
 
@@ -285,8 +282,7 @@ const Browse = () => {
             </div>
           </div>
         </div>
-      </main>
-    </div>
+    </DashboardLayout>
   );
 };
 
