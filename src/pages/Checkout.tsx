@@ -110,23 +110,21 @@ const Checkout = () => {
   const [clientSecret, setClientSecret] = useState<string>("");
   const [isCreatingPayment, setIsCreatingPayment] = useState(false);
 
-  // Check if we're returning from Stripe redirect
-  useEffect(() => {
-    const paymentIntent = searchParams.get('payment_intent');
-    const redirectStatus = searchParams.get('redirect_status');
-    
-    if (paymentIntent && redirectStatus === 'succeeded') {
-      // Payment completed via redirect, go to confirmation
-      const orderIdParam = searchParams.get('orderId') || location.state?.orderId;
-      navigate(`/order-confirmation?orderId=${orderIdParam}&payment_intent=${paymentIntent}`);
-      return;
-    }
-  }, [searchParams, navigate, location.state]);
-
-  // Get order ID from location state or create new order
+  // Handle checkout initialization and Stripe redirects
   useEffect(() => {
     const initializeCheckout = async () => {
-      // Check if we have an order ID from location state (already created order)
+      // FIRST: Check if we're returning from Stripe redirect
+      const paymentIntent = searchParams.get('payment_intent');
+      const redirectStatus = searchParams.get('redirect_status');
+      
+      if (paymentIntent && redirectStatus === 'succeeded') {
+        // Payment completed via redirect, go to confirmation immediately
+        const orderIdParam = searchParams.get('orderId') || location.state?.orderId;
+        navigate(`/order-confirmation?orderId=${orderIdParam}&payment_intent=${paymentIntent}`, { replace: true });
+        return;
+      }
+
+      // THEN: Check authentication and cart
       const existingOrderId = location.state?.orderId;
 
       if (!user) {
@@ -180,7 +178,7 @@ const Checkout = () => {
     };
 
     initializeCheckout();
-  }, [user, items, location.state, navigate, toast]);
+  }, [searchParams, user, items, location.state, navigate, toast]);
 
   const handlePaymentSuccess = async () => {
     toast({
