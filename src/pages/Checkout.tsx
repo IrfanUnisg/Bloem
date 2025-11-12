@@ -103,7 +103,7 @@ const Checkout = () => {
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
-  const { items, clearCart } = useCart();
+  const { items, refreshCart } = useCart();
   const { toast } = useToast();
 
   const [orderId, setOrderId] = useState<string | null>(null);
@@ -188,8 +188,8 @@ const Checkout = () => {
       description: "Your order has been confirmed.",
     });
 
-    // Clear cart
-    await clearCart();
+    // Refresh cart to sync with database (cart was already cleared by orders API)
+    await refreshCart();
 
     // Navigate to order confirmation
     navigate(`/order-confirmation?orderId=${orderId}`);
