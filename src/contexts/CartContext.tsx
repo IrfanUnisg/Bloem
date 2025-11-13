@@ -30,9 +30,21 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     setIsLoading(true);
     try {
       const cartItems = await cartService.getCartItems(user.id);
-      setItems(cartItems);
+      
+      // Filter out items that are no longer FOR_SALE (they might be RESERVED, SOLD, etc.)
+      const validCartItems = cartItems.filter(
+        cartItem => cartItem.item?.status === 'FOR_SALE'
+      );
+      
+      // Log if items were filtered out
+      if (validCartItems.length < cartItems.length) {
+        console.log(`Filtered out ${cartItems.length - validCartItems.length} unavailable cart items`);
+      }
+      
+      setItems(validCartItems);
     } catch (error) {
       console.error('Error refreshing cart:', error);
+      setItems([]); // Clear cart on error
     } finally {
       setIsLoading(false);
     }

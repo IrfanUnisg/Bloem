@@ -63,6 +63,11 @@ const Browse = () => {
         // Apply client-side filters for size and condition
         let filtered = fetchedItems;
         
+        // Extra safety filter: ensure no RESERVED, SOLD, or REMOVED items
+        filtered = filtered.filter(item => 
+          item.status === 'FOR_SALE'
+        );
+        
         if (selectedSizes.length > 0) {
           filtered = filtered.filter(item => selectedSizes.includes(item.size));
         }
