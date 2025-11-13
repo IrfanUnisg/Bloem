@@ -180,12 +180,8 @@ serve(async (req) => {
         }
       }
 
-      // Clear cart items
-      await supabaseClient
-        .from('cart_items')
-        .delete()
-        .eq('user_id', userId)
-        .in('item_id', itemIds)
+      // NOTE: Cart items will be cleared AFTER successful payment confirmation
+      // in the confirm-payment function, not here during order creation
 
       // Fetch complete order
       const { data: completeOrder } = await supabaseClient

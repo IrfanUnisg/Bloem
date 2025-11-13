@@ -93,6 +93,13 @@ serve(async (req) => {
       })
       .in('id', itemIds)
 
+    // Clear cart items after successful payment
+    await supabaseClient
+      .from('cart_items')
+      .delete()
+      .eq('user_id', order.buyer_id)
+      .in('item_id', itemIds)
+
     // Create transactions for each item
     for (const orderItem of order.items) {
       const item = orderItem.item

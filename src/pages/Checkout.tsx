@@ -118,8 +118,14 @@ const Checkout = () => {
       const redirectStatus = searchParams.get('redirect_status');
       
       if (paymentIntent && redirectStatus === 'succeeded') {
-        // Payment completed via redirect, go to confirmation immediately
+        // Payment completed via redirect, refresh cart and go to confirmation
         const orderIdParam = searchParams.get('orderId') || location.state?.orderId;
+        
+        // Refresh cart to sync with database after payment
+        if (user) {
+          await refreshCart();
+        }
+        
         navigate(`/order-confirmation?orderId=${orderIdParam}&payment_intent=${paymentIntent}`, { replace: true });
         return;
       }
@@ -130,6 +136,11 @@ const Checkout = () => {
       if (!user) {
         navigate("/sign-in");
         return;
+      }
+
+      // Refresh cart before validation to ensure we have the latest state
+      if (!existingOrderId) {
+        await refreshCart();
       }
 
       // If no existing order and cart is empty, redirect to cart
@@ -178,7 +189,7 @@ const Checkout = () => {
     };
 
     initializeCheckout();
-  }, [searchParams, user, items, location.state, navigate, toast]);
+  }, [searchParams, user, items, location.state, navigate, toast, refreshCart]);
 
   const handlePaymentSuccess = async () => {
     toast({

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCart } from "@/contexts/CartContext";
 import { orderService } from "@/services/order.service";
 import { OrderWithItems } from "@/types";
 import { useToast } from "@/hooks/use-toast";
@@ -17,6 +18,7 @@ const OrderConfirmation = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
+  const { refreshCart } = useCart();
   const { toast } = useToast();
 
   const [order, setOrder] = useState<OrderWithItems | null>(null);
@@ -66,11 +68,17 @@ const OrderConfirmation = () => {
 
           const { order: confirmedOrder } = await response.json();
           setOrder(confirmedOrder);
+          
+          // Refresh cart to sync with database after payment confirmation
+          await refreshCart();
         } else if (orderId) {
           // Just load the order
           const loadedOrder = await orderService.getOrderById(orderId);
           if (loadedOrder) {
             setOrder(loadedOrder);
+            
+            // Refresh cart to ensure it's in sync
+            await refreshCart();
           } else {
             throw new Error('Order not found');
           }
