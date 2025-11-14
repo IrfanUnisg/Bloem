@@ -100,92 +100,103 @@ serve(async (req) => {
         throw new Error(`Some items are not available: ${unavailableDetails}`)
       }
 
-      // Verify all items are from the same store
-      const itemStoreId = storeId || items[0].store_id
-      const allSameStore = items.every((item: any) => item.store_id === itemStoreId)
+      // Group items by store to create separate orders for each store
+      const itemsByStore = items.reduce((acc: any, item: any) => {
+        const storeId = item.store_id
+        if (!acc[storeId]) {
+          acc[storeId] = []
+        }
+        acc[storeId].push(item)
+        return acc
+      }, {})
 
-      if (!allSameStore) {
-        throw new Error('All items must be from the same store')
-      }
-
-      // Calculate pricing
-      const subtotal = items.reduce((sum: number, item: any) => sum + item.price, 0)
-      const serviceFee = 0
-      const tax = 0
-      const total = subtotal + serviceFee + tax
-
-      // Get store commission rate
-      const store = items[0].store
-      const commissionRate = store.commissionRate || 0.20
       const platformFeeRate = 0.05
+      const createdOrders = []
 
-      // Create order
-      const { data: order, error: orderError } = await supabaseClient
-        .from('orders')
-        .insert({
-          order_number: generateOrderNumber(),
-          status: 'RESERVED',
-          pickup_method: 'IN_STORE',
-          subtotal,
-          service_fee: serviceFee,
-          tax,
-          total,
-          buyer_id: userId,
-          store_id: itemStoreId,
-          created_at: new Date().toISOString(),
-        })
-        .select()
-        .single()
+      // Create separate orders for each store
+      for (const [currentStoreId, storeItems] of Object.entries(itemsByStore)) {
+        const storeItemsArray = storeItems as any[]
+        
+        // Calculate pricing for this store's items
+        const subtotal = storeItemsArray.reduce((sum: number, item: any) => sum + item.price, 0)
+        const serviceFee = 0
+        const tax = 0
+        const total = subtotal + serviceFee + tax
 
-      if (orderError) throw orderError
+        // Get store commission rate
+        const store = storeItemsArray[0].store
+        const commissionRate = store.commissionRate || 0.20
 
-      // Create order items and update item statuses
-      for (const item of items) {
-        const priceAtPurchase = item.price
-        const platformFee = priceAtPurchase * platformFeeRate
-        const storeCommission = item.is_consignment ? priceAtPurchase * commissionRate : 0
-        const sellerPayout = item.is_consignment
-          ? priceAtPurchase - storeCommission - platformFee
-          : 0
-
-        // Create order item
-        await supabaseClient.from('order_items').insert({
-          order_id: order.id,
-          item_id: item.id,
-          price_at_purchase: priceAtPurchase,
-          seller_payout: sellerPayout,
-          store_commission: storeCommission,
-          platform_fee: platformFee,
-          created_at: new Date().toISOString(),
-        })
-
-        // Update item status to RESERVED
-        await supabaseClient
-          .from('items')
-          .update({ status: 'RESERVED', updated_at: new Date().toISOString() })
-          .eq('id', item.id)
-
-        // Create transaction record if consignment
-        if (item.is_consignment && item.seller_id) {
-          await supabaseClient.from('transactions').insert({
-            amount: priceAtPurchase,
-            seller_earnings: sellerPayout,
-            store_commission: storeCommission,
-            platform_fee: platformFee,
-            status: 'PENDING',
-            order_id: order.id,
-            item_id: item.id,
-            seller_id: item.seller_id,
+        // Create order for this store
+        const { data: order, error: orderError } = await supabaseClient
+          .from('orders')
+          .insert({
+            order_number: generateOrderNumber(),
+            status: 'RESERVED',
+            pickup_method: 'IN_STORE',
+            subtotal,
+            service_fee: serviceFee,
+            tax,
+            total,
+            buyer_id: userId,
+            store_id: currentStoreId,
             created_at: new Date().toISOString(),
           })
+          .select()
+          .single()
+
+        if (orderError) throw orderError
+
+        // Create order items and update item statuses
+        for (const item of storeItemsArray) {
+          const priceAtPurchase = item.price
+          const platformFee = priceAtPurchase * platformFeeRate
+          const storeCommission = item.is_consignment ? priceAtPurchase * commissionRate : 0
+          const sellerPayout = item.is_consignment
+            ? priceAtPurchase - storeCommission - platformFee
+            : 0
+
+          // Create order item
+          await supabaseClient.from('order_items').insert({
+            order_id: order.id,
+            item_id: item.id,
+            price_at_purchase: priceAtPurchase,
+            seller_payout: sellerPayout,
+            store_commission: storeCommission,
+            platform_fee: platformFee,
+            created_at: new Date().toISOString(),
+          })
+
+          // Update item status to RESERVED
+          await supabaseClient
+            .from('items')
+            .update({ status: 'RESERVED', updated_at: new Date().toISOString() })
+            .eq('id', item.id)
+
+          // Create transaction record if consignment
+          if (item.is_consignment && item.seller_id) {
+            await supabaseClient.from('transactions').insert({
+              amount: priceAtPurchase,
+              seller_earnings: sellerPayout,
+              store_commission: storeCommission,
+              platform_fee: platformFee,
+              status: 'PENDING',
+              order_id: order.id,
+              item_id: item.id,
+              seller_id: item.seller_id,
+              created_at: new Date().toISOString(),
+            })
+          }
         }
+
+        createdOrders.push(order)
       }
 
       // NOTE: Cart items will be cleared AFTER successful payment confirmation
       // in the confirm-payment function, not here during order creation
 
-      // Fetch complete order
-      const { data: completeOrder } = await supabaseClient
+      // Fetch complete orders with details
+      const { data: completeOrders } = await supabaseClient
         .from('orders')
         .select(`
           *,
@@ -196,10 +207,11 @@ serve(async (req) => {
           buyer:users!orders_buyer_id_fkey(*),
           store:stores!orders_store_id_fkey(*)
         `)
-        .eq('id', order.id)
-        .single()
+        .in('id', createdOrders.map(o => o.id))
 
-      return new Response(JSON.stringify({ order: completeOrder }), {
+      // Return the first order for backward compatibility (frontend expects single order)
+      // In the future, this can be updated to handle multiple orders
+      return new Response(JSON.stringify({ order: completeOrders?.[0], orders: completeOrders }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 201,
       })
