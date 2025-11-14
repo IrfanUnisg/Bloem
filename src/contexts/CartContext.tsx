@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { useAuth } from "./AuthContext";
 import { cartService } from "@/services/cart.service";
+import { supabase } from "@/lib/supabase";
 import { CartItemWithItem } from "@/types";
 
 interface CartContextType {
@@ -29,6 +30,15 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
     setIsLoading(true);
     try {
+      // Check if session is still valid before fetching cart
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !session) {
+        console.warn('Session invalid during cart refresh, clearing cart');
+        setItems([]);
+        setIsLoading(false);
+        return;
+      }
+
       const cartItems = await cartService.getCartItems(user.id);
       
       // Filter out items that are no longer FOR_SALE (they might be RESERVED, SOLD, etc.)
@@ -38,7 +48,9 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       
       // Log if items were filtered out
       if (validCartItems.length < cartItems.length) {
-        console.log(`Filtered out ${cartItems.length - validCartItems.length} unavailable cart items`);
+        const filteredItems = cartItems.filter(ci => ci.item?.status !== 'FOR_SALE');
+        const statusDetails = filteredItems.map(ci => `${ci.item?.title}: ${ci.item?.status}`).join(', ');
+        console.warn(`CART: Filtered out ${cartItems.length - validCartItems.length} unavailable items - ${statusDetails}`);
       }
       
       setItems(validCartItems);

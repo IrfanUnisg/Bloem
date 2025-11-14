@@ -157,6 +157,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       await authService.signOut();
       setUser(null);
+      // Redirect to landing page after logout
+      window.location.href = "/";
     } catch (error) {
       console.error("Error logging out:", error);
     }
