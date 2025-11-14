@@ -1,5 +1,4 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { useNavigate } from "react-router-dom";
 import { User as SupabaseUser } from "@supabase/supabase-js";
 import { authService } from "@/services/auth.service";
 // import { userService } from "@/services/user.service"; // TODO: Enable after Prisma migration
@@ -23,7 +22,6 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const navigate = useNavigate();
 
   useEffect(() => {
     // Check for existing Supabase session
@@ -160,7 +158,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       await authService.signOut();
       setUser(null);
       // Redirect to landing page after logout
-      navigate("/");
+      window.location.href = "/";
     } catch (error) {
       console.error("Error logging out:", error);
     }
