@@ -10,7 +10,7 @@ All dummy/mock data has been successfully replaced with real database queries ac
 
 ### 1. ✅ Created User Profile Service (`src/services/user-profile.service.ts`)
 
-**New File:** A complete Supabase-based service for user profile management
+**New File:** A complete Supabase-based service for user profile management.
 
 **Features:**
 - `getUserProfile(userId)` - Fetch user profile from database
