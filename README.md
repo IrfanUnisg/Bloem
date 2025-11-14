@@ -1,1 +1,1 @@
-Bloem - The Online Thrift Shop
+Bloem - The Online Thrift Shop 
