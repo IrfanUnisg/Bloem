@@ -1,0 +1,55 @@
+# Shell scripts must use LF (Unix line endings)
+*.sh text eol=lf
+
+# TypeScript/JavaScript files
+*.ts text eol=lf
+*.tsx text eol=lf
+*.js text eol=lf
+*.jsx text eol=lf
+
+# Configuration files
+*.json text eol=lf
+*.jsonc text eol=lf
+*.prisma text eol=lf
+
+# Markdown and documentation
+*.md text eol=lf
+*.mdx text eol=lf
+
+# YAML files
+*.yml text eol=lf
+*.yaml text eol=lf
+
+# SQL files
+*.sql text eol=lf
+
+# CSS/Styles
+*.css text eol=lf
+*.scss text eol=lf
+
+# HTML
+*.html text eol=lf
+
+# PowerShell scripts use CRLF (Windows)
+*.ps1 text eol=crlf
+
+# Images (binary)
+*.jpg binary
+*.jpeg binary
+*.png binary
+*.gif binary
+*.ico binary
+*.svg text eol=lf
+*.webp binary
+
+# Fonts (binary)
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+
+# Other binary files
+*.pdf binary
+*.zip binary
+*.node binary
+*.dll binary
