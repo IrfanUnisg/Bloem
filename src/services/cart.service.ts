@@ -13,9 +13,14 @@ export const cartService = {
    */
   async getCartItems(userId: string): Promise<CartItemWithItem[]> {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) {
+        console.error('Session error in getCartItems:', sessionError);
+        return [];
+      }
       if (!session) {
-        throw new Error('Not authenticated');
+        console.warn('No session in getCartItems');
+        return [];
       }
 
       const response = await fetch(`${EDGE_FUNCTIONS.CART}?userId=${userId}`, {

@@ -109,9 +109,13 @@ const Checkout = () => {
   const [orderId, setOrderId] = useState<string | null>(null);
   const [clientSecret, setClientSecret] = useState<string>("");
   const [isCreatingPayment, setIsCreatingPayment] = useState(false);
+  const [hasInitialized, setHasInitialized] = useState(false);
 
   // Handle checkout initialization and Stripe redirects
   useEffect(() => {
+    // Prevent multiple initializations
+    if (hasInitialized) return;
+
     const initializeCheckout = async () => {
       // FIRST: Check if we're returning from Stripe redirect
       const paymentIntent = searchParams.get('payment_intent');
@@ -122,8 +126,13 @@ const Checkout = () => {
         const orderIdParam = searchParams.get('orderId') || location.state?.orderId;
         
         // Refresh cart to sync with database after payment
+        // Don't block on auth errors since payment already succeeded
         if (user) {
-          await refreshCart();
+          try {
+            await refreshCart();
+          } catch (error) {
+            console.warn('Cart refresh failed after Stripe redirect, but continuing:', error);
+          }
         }
         
         navigate(`/order-confirmation?orderId=${orderIdParam}&payment_intent=${paymentIntent}`, { replace: true });
@@ -138,20 +147,31 @@ const Checkout = () => {
         return;
       }
 
-      // Refresh cart before validation to ensure we have the latest state
-      if (!existingOrderId) {
-        await refreshCart();
-      }
-
-      // If no existing order and cart is empty, redirect to cart
-      if (!existingOrderId && items.length === 0) {
-        toast({
-          title: "Cart is empty",
-          description: "Please add items to your cart before checking out.",
-          variant: "destructive",
-        });
-        navigate("/cart");
-        return;
+      // If we have an existing order, skip cart validation
+      if (existingOrderId) {
+        console.log('DEBUG: Using existing order:', existingOrderId);
+      } else {
+        // Check cart BEFORE refreshing to avoid race condition
+        console.log('DEBUG: Current cart items:', items.length);
+        
+        if (items.length === 0) {
+          // Try refreshing once to see if items exist
+          await refreshCart();
+          
+          // If still empty after refresh, redirect to cart
+          if (items.length === 0) {
+            console.error('CHECKOUT ERROR: Cart is empty after refresh');
+            toast({
+              title: "Cart is empty",
+              description: "Please add items to your cart before checking out.",
+              variant: "destructive",
+            });
+            navigate("/cart", { replace: true });
+            return;
+          }
+        }
+        
+        console.log('DEBUG: Proceeding with checkout, cart has', items.length, 'items');
       }
 
       setIsCreatingPayment(true);
@@ -165,7 +185,10 @@ const Checkout = () => {
           const itemIds = items.map(cartItem => (cartItem as any).item_id || cartItem.itemId);
           const storeId = (items[0].item as any)?.store_id || items[0].item?.storeId;
           
+          console.log('DEBUG: Creating order with itemIds:', itemIds, 'storeId:', storeId);
+          
           const order = await orderService.createOrder(user.id, itemIds, storeId);
+          console.log('DEBUG: Order created successfully:', order.id);
           currentOrderId = order.id;
         }
 
@@ -174,6 +197,7 @@ const Checkout = () => {
         // Create payment intent
         const paymentData = await orderService.createPaymentIntent(currentOrderId);
         setClientSecret(paymentData.clientSecret);
+        setHasInitialized(true);
 
       } catch (error: any) {
         console.error("Error initializing checkout:", error);
@@ -182,14 +206,19 @@ const Checkout = () => {
           description: error.message || "Failed to initialize checkout. Please try again.",
           variant: "destructive",
         });
-        navigate("/cart");
+        // If order was created but payment intent failed, go to orders page
+        if (error.message?.includes('payment')) {
+          navigate("/orders");
+        } else {
+          navigate("/cart");
+        }
       } finally {
         setIsCreatingPayment(false);
       }
-    };
+    }
 
     initializeCheckout();
-  }, [searchParams, user, items, location.state, navigate, toast, refreshCart]);
+  }, []); // Run only once on mount
 
   const handlePaymentSuccess = async () => {
     toast({
@@ -198,7 +227,12 @@ const Checkout = () => {
     });
 
     // Refresh cart to sync with database (cart was already cleared by orders API)
-    await refreshCart();
+    // Don't await or let errors block navigation
+    try {
+      await refreshCart();
+    } catch (error) {
+      console.warn('Cart refresh failed after payment, but continuing:', error);
+    }
 
     // Navigate to order confirmation
     navigate(`/order-confirmation?orderId=${orderId}`);

@@ -147,17 +147,37 @@ const ItemDetail = () => {
   }
 
   if (!item) {
+    // Redirect to browse if item doesn't exist
+    setTimeout(() => navigate("/browse", { replace: true }), 0);
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <Header variant={user ? "authenticated" : "public"} />
+        <main className="flex-1 flex items-center justify-center px-4">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  // Check if item is unavailable (not FOR_SALE)
+  if (item.status !== "FOR_SALE") {
+    // Redirect to browse if item is sold/reserved/etc
+    setTimeout(() => {
+      toast({
+        title: "Item unavailable",
+        description: "This item is no longer available for purchase.",
+        variant: "destructive",
+      });
+      navigate("/browse", { replace: true });
+    }, 0);
     return (
       <div className="min-h-screen flex flex-col bg-background">
         <Header variant={user ? "authenticated" : "public"} />
         <main className="flex-1 flex items-center justify-center px-4">
           <div className="text-center">
-            <h1 className="text-2xl font-bold text-foreground mb-2">Item Not Found</h1>
-            <p className="text-muted-foreground mb-6">This item doesn't exist or has been removed.</p>
-            <Button onClick={() => navigate("/browse")}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Browse
-            </Button>
+            <h1 className="text-2xl font-bold text-foreground mb-2">Item Unavailable</h1>
+            <p className="text-muted-foreground mb-6">This item is no longer available for purchase.</p>
           </div>
         </main>
         <Footer />
@@ -262,14 +282,7 @@ const ItemDetail = () => {
               ) : (
                 <div className="bg-muted p-4 rounded-lg mb-8">
                   <p className="text-sm font-medium text-muted-foreground">
-                    This item is currently{" "}
-                    {item.status === "SOLD"
-                      ? "sold"
-                      : item.status === "RESERVED"
-                      ? "reserved"
-                      : item.status === "PENDING_DROPOFF"
-                      ? "pending drop-off"
-                      : "unavailable"}
+                    This item is currently unavailable
                   </p>
                 </div>
               )}

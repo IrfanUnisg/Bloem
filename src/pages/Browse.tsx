@@ -52,7 +52,13 @@ const Browse = () => {
           itemService.browseItems({ ...filters, category: cat })
         );
         const categoryResults = await Promise.all(categoryPromises);
-        const allItems = categoryResults.flat();
+        let allItems = categoryResults.flat();
+        
+        // Filter out user's own items and ensure only FOR_SALE items
+        allItems = allItems.filter(item => 
+          item.status === 'FOR_SALE' && (!user || (item as any).seller_id !== user.id)
+        );
+        
         setItems(allItems);
       } else {
         if (priceRange[0] > 0) filters.minPrice = priceRange[0];
@@ -67,6 +73,11 @@ const Browse = () => {
         filtered = filtered.filter(item => 
           item.status === 'FOR_SALE'
         );
+        
+        // Filter out user's own items
+        if (user) {
+          filtered = filtered.filter(item => (item as any).seller_id !== user.id);
+        }
         
         if (selectedSizes.length > 0) {
           filtered = filtered.filter(item => selectedSizes.includes(item.size));
