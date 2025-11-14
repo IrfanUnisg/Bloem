@@ -1,3 +1,4 @@
+// @ts-nocheck - Deno edge function
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -68,9 +69,22 @@ serve(async (req) => {
     if (method === 'POST') {
       const { userId, itemIds, storeId } = await req.json()
 
+      console.log('DEBUG: POST /orders - userId:', userId, 'itemIds:', itemIds)
+
       if (!userId || !itemIds || !Array.isArray(itemIds) || itemIds.length === 0) {
         throw new Error('User ID and item IDs required')
       }
+
+      // Verify user is authenticated
+      const { data: { user }, error: authError } = await supabaseClient.auth.getUser()
+      if (authError) {
+        console.error('AUTH ERROR:', authError)
+        throw new Error(`Authentication failed: ${authError.message}`)
+      }
+      if (!user) {
+        throw new Error('User not authenticated')
+      }
+      console.log('DEBUG: Authenticated user:', user.id)
 
       // Fetch ALL items first (without status filter) to see what's wrong
       const { data: allItems, error: allItemsError } = await supabaseClient
@@ -222,7 +236,9 @@ serve(async (req) => {
       status: 405,
     })
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    console.error('ORDERS ERROR:', errorMessage, error)
+    return new Response(JSON.stringify({ error: errorMessage }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 400,
     })

@@ -1,3 +1,4 @@
+// @ts-nocheck - Deno edge function
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -117,12 +118,15 @@ serve(async (req) => {
       })
     }
 
+    // Method not allowed
     return new Response(JSON.stringify({ error: 'Method not allowed' }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 405,
     })
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    console.error('Error:', errorMessage)
+    return new Response(JSON.stringify({ error: errorMessage }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 400,
     })
