@@ -128,6 +128,3 @@ Dark Charcoal for all text, ensuring WCAG AA compliant contrast.
 - Relevant design systems and sustainable fashion branding.
 
 ---
-
-
----
