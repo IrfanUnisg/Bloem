@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -8,9 +9,11 @@ import { StoreCard } from "@/components/cards/StoreCard";
 import { Upload, ShoppingBag, DollarSign, TrendingUp, MapPin, Heart } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { storeService } from "@/services/store.service";
+import { pageMetadata, structuredData } from "@/lib/seo";
 import type { Store } from "@/services/store.service";
 
 const Index = () => {
+  const meta = pageMetadata.home();
   const navigate = useNavigate();
   const { user } = useAuth();
   const [featuredStores, setFeaturedStores] = useState<Store[]>([]);
@@ -51,7 +54,30 @@ const Index = () => {
     description: "Digital inventory management, automated sales tracking, and powerful marketing tools."
   }];
 
-  return <div className="min-h-screen flex flex-col">
+  return (
+    <div className="min-h-screen flex flex-col">
+      <Helmet>
+        <title>{meta.title}</title>
+        <meta name="description" content={meta.description} />
+        <meta name="robots" content={meta.robots} />
+        {meta.keywords && <meta name="keywords" content={meta.keywords} />}
+        <link rel="canonical" href={meta.canonicalUrl} />
+        <meta property="og:title" content={meta.ogTitle} />
+        <meta property="og:description" content={meta.ogDescription} />
+        <meta property="og:image" content={meta.ogImage} />
+        <meta property="og:url" content={meta.ogUrl} />
+        <meta property="og:type" content="website" />
+        <meta name="twitter:card" content={meta.twitterCard} />
+        <meta name="twitter:title" content={meta.ogTitle} />
+        <meta name="twitter:description" content={meta.ogDescription} />
+        <meta name="twitter:image" content={meta.twitterImage} />
+        <script type="application/ld+json">
+          {JSON.stringify(structuredData.organization())}
+        </script>
+        <script type="application/ld+json">
+          {JSON.stringify(structuredData.website())}
+        </script>
+      </Helmet>
       <Header variant="public" />
       
       {/* Hero Section */}
@@ -219,6 +245,8 @@ const Index = () => {
       </section>
 
       <Footer />
-    </div>;
+    </div>
+  );
 };
+
 export default Index;

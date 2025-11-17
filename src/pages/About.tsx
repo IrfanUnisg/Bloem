@@ -1,9 +1,12 @@
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
+import { Helmet } from "react-helmet-async";
 import { Heart, Users, Leaf, TrendingUp } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import { pageMetadata, structuredData } from "@/lib/seo";
 
 const About = () => {
+  const meta = pageMetadata.about();
   const values = [
     {
       icon: <Heart className="h-6 w-6" />,
@@ -29,6 +32,24 @@ const About = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <Helmet>
+        <title>{meta.title}</title>
+        <meta name="description" content={meta.description} />
+        <meta name="robots" content={meta.robots} />
+        <link rel="canonical" href={meta.canonicalUrl} />
+        <meta property="og:title" content={meta.ogTitle} />
+        <meta property="og:description" content={meta.ogDescription} />
+        <meta property="og:image" content={meta.ogImage} />
+        <meta property="og:url" content={meta.ogUrl} />
+        <meta property="og:type" content="website" />
+        <meta name="twitter:card" content={meta.twitterCard} />
+        <meta name="twitter:title" content={meta.ogTitle} />
+        <meta name="twitter:description" content={meta.ogDescription} />
+        <meta name="twitter:image" content={meta.twitterImage} />
+        <script type="application/ld+json">
+          {JSON.stringify(structuredData.organization())}
+        </script>
+      </Helmet>
       <Header variant="public" />
       
       <main className="flex-1">

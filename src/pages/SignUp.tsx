@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import { Header } from "@/components/layout/Header";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,8 +11,10 @@ import { User, Store, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { pageMetadata } from "@/lib/seo";
 
 const SignUp = () => {
+  const meta = pageMetadata.signUp();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { signup, isLoading, user } = useAuth();
@@ -112,6 +115,16 @@ const SignUp = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      <Helmet>
+        <title>{meta.title}</title>
+        <meta name="description" content={meta.description} />
+        <meta name="robots" content={meta.robots} />
+        <link rel="canonical" href={meta.canonicalUrl} />
+        <meta property="og:title" content={meta.ogTitle} />
+        <meta property="og:description" content={meta.ogDescription} />
+        <meta property="og:image" content={meta.ogImage} />
+        <meta property="og:url" content={meta.ogUrl} />
+      </Helmet>
       <Header variant="public" />
       
       <main className="flex-1 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">

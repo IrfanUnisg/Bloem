@@ -1,13 +1,16 @@
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
+import { Helmet } from "react-helmet-async";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { pageMetadata, structuredData } from "@/lib/seo";
 
 const FAQ = () => {
+  const meta = pageMetadata.faq();
   const faqs = [
     {
       category: "for sellers",
@@ -97,10 +100,40 @@ const FAQ = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <Helmet>
+        <title>{meta.title}</title>
+        <meta name="description" content={meta.description} />
+        <meta name="robots" content={meta.robots} />
+        <link rel="canonical" href={meta.canonicalUrl} />
+        
+        {/* Open Graph */}
+        <meta property="og:title" content={meta.ogTitle} />
+        <meta property="og:description" content={meta.ogDescription} />
+        <meta property="og:image" content={meta.ogImage} />
+        <meta property="og:url" content={meta.ogUrl} />
+        <meta property="og:type" content="website" />
+        
+        {/* Twitter Card */}
+        <meta name="twitter:card" content={meta.twitterCard} />
+        <meta name="twitter:title" content={meta.ogTitle} />
+        <meta name="twitter:description" content={meta.ogDescription} />
+        <meta name="twitter:image" content={meta.twitterImage} />
+        
+        {/* FAQ Structured Data */}
+        <script type="application/ld+json">
+          {JSON.stringify(structuredData.faqPage(
+            faqs.flatMap(cat => 
+              cat.questions.map(q => ({
+                question: q.q,
+                answer: q.a
+              }))
+            )
+          ))}
+        </script>
+      </Helmet>
       <Header variant="public" />
-      
-      <main className="flex-1">
-        {/* Hero Section */}
+
+      <main className="flex-1 py-16">        {/* Hero Section */}
         <section className="bg-primary py-16 md:py-24">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <div className="max-w-3xl mx-auto text-center">

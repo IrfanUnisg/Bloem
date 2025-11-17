@@ -1,5 +1,6 @@
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
+import { Helmet } from "react-helmet-async";
 import { Mail, MapPin, Phone } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,8 +10,10 @@ import { Label } from "@/components/ui/label";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { contactService } from "@/services/contact.service";
+import { pageMetadata } from "@/lib/seo";
 
 const Contact = () => {
+  const meta = pageMetadata.contact();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -45,6 +48,25 @@ const Contact = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <Helmet>
+        <title>{meta.title}</title>
+        <meta name="description" content={meta.description} />
+        <meta name="robots" content={meta.robots} />
+        <link rel="canonical" href={meta.canonicalUrl} />
+        
+        {/* Open Graph */}
+        <meta property="og:title" content={meta.ogTitle} />
+        <meta property="og:description" content={meta.ogDescription} />
+        <meta property="og:image" content={meta.ogImage} />
+        <meta property="og:url" content={meta.ogUrl} />
+        <meta property="og:type" content="website" />
+        
+        {/* Twitter Card */}
+        <meta name="twitter:card" content={meta.twitterCard} />
+        <meta name="twitter:title" content={meta.ogTitle} />
+        <meta name="twitter:description" content={meta.ogDescription} />
+        <meta name="twitter:image" content={meta.twitterImage} />
+      </Helmet>
       <Header variant="public" />
       
       <main className="flex-1">

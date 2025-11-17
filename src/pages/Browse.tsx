@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { ItemCard } from "@/components/cards/ItemCard";
 import { Button } from "@/components/ui/button";
@@ -13,8 +14,10 @@ import { itemService } from "@/services/item.service";
 import { ItemWithRelations } from "@/types";
 import { Filter, ShoppingBag, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { pageMetadata } from "@/lib/seo";
 
 const Browse = () => {
+  const meta = pageMetadata.browse();
   const navigate = useNavigate();
   const { user } = useAuth();
   const cart = useCart();
@@ -140,6 +143,25 @@ const Browse = () => {
 
   return (
     <DashboardLayout>
+      <Helmet>
+        <title>{meta.title}</title>
+        <meta name="description" content={meta.description} />
+        <meta name="robots" content={meta.robots} />
+        <link rel="canonical" href={meta.canonicalUrl} />
+        
+        {/* Open Graph */}
+        <meta property="og:title" content={meta.ogTitle} />
+        <meta property="og:description" content={meta.ogDescription} />
+        <meta property="og:image" content={meta.ogImage} />
+        <meta property="og:url" content={meta.ogUrl} />
+        <meta property="og:type" content="website" />
+        
+        {/* Twitter Card */}
+        <meta name="twitter:card" content={meta.twitterCard} />
+        <meta name="twitter:title" content={meta.ogTitle} />
+        <meta name="twitter:description" content={meta.ogDescription} />
+        <meta name="twitter:image" content={meta.twitterImage} />
+      </Helmet>
       <div className="p-6 md:p-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">

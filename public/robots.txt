@@ -1,14 +1,66 @@
+# Bloem Thrift Platform - robots.txt
+# https://bloem.shop/
+
+# Default rules for all bots
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /store/
+Disallow: /dashboard
+Disallow: /upload
+Disallow: /cart
+Disallow: /checkout
+Disallow: /orders
+Disallow: /order-confirmation
+Disallow: /wishlist
+Disallow: /profile
+Disallow: /store-profile
+Disallow: /sign-up
+Disallow: /sign-in
+
+# Allow search engines to crawl public pages
+Allow: /
+Allow: /about
+Allow: /browse
+Allow: /browse-stores
+Allow: /faq
+Allow: /contact
+Allow: /terms
+
+# Sitemap location
+Sitemap: https://bloem.shop/sitemap.xml
+
+# Crawl delay (seconds) - be respectful
+Crawl-delay: 1
+
+# Specific rules for Googlebot (more aggressive crawling allowed)
 User-agent: Googlebot
 Allow: /
 
+# Specific rules for Bingbot
 User-agent: Bingbot
 Allow: /
 
+# Social media bots - allow full access
 User-agent: Twitterbot
 Allow: /
 
 User-agent: facebookexternalhit
 Allow: /
 
-User-agent: *
-Allow: /
+# Block bad bots
+User-agent: MJ12bot
+Disallow: /
+
+User-agent: AhrefsBot
+User-agent: SemrushBot
+User-agent: DotBot
+Disallow: /
+
+# AI/LLM crawlers - restrict access
+User-agent: GPTBot
+User-agent: CCBot
+User-agent: anthropic-ai
+User-agent: Claude-Web
+User-agent: ClaudeBot
+Disallow: /

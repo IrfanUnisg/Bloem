@@ -1,12 +1,15 @@
 import { useState, useEffect } from "react";
+import { Helmet } from "react-helmet-async";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { StoreCard } from "@/components/cards/StoreCard";
 import { Input } from "@/components/ui/input";
 import { Search, MapPin, Loader2 } from "lucide-react";
 import { storeService, Store } from "@/services/store.service";
 import { useToast } from "@/hooks/use-toast";
+import { pageMetadata } from "@/lib/seo";
 
 const BrowseStores = () => {
+  const meta = pageMetadata.browseStores();
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [stores, setStores] = useState<Store[]>([]);
@@ -41,6 +44,21 @@ const BrowseStores = () => {
   if (loading) {
     return (
       <DashboardLayout>
+        <Helmet>
+          <title>{meta.title}</title>
+          <meta name="description" content={meta.description} />
+          <meta name="robots" content={meta.robots} />
+          <link rel="canonical" href={meta.canonicalUrl} />
+          <meta property="og:title" content={meta.ogTitle} />
+          <meta property="og:description" content={meta.ogDescription} />
+          <meta property="og:image" content={meta.ogImage} />
+          <meta property="og:url" content={meta.ogUrl} />
+          <meta property="og:type" content="website" />
+          <meta name="twitter:card" content={meta.twitterCard} />
+          <meta name="twitter:title" content={meta.ogTitle} />
+          <meta name="twitter:description" content={meta.ogDescription} />
+          <meta name="twitter:image" content={meta.twitterImage} />
+        </Helmet>
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 flex items-center justify-center min-h-[400px]">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
@@ -50,6 +68,25 @@ const BrowseStores = () => {
 
   return (
     <DashboardLayout>
+      <Helmet>
+        <title>{meta.title}</title>
+        <meta name="description" content={meta.description} />
+        <meta name="robots" content={meta.robots} />
+        <link rel="canonical" href={meta.canonicalUrl} />
+        
+        {/* Open Graph */}
+        <meta property="og:title" content={meta.ogTitle} />
+        <meta property="og:description" content={meta.ogDescription} />
+        <meta property="og:image" content={meta.ogImage} />
+        <meta property="og:url" content={meta.ogUrl} />
+        <meta property="og:type" content="website" />
+        
+        {/* Twitter Card */}
+        <meta name="twitter:card" content={meta.twitterCard} />
+        <meta name="twitter:title" content={meta.ogTitle} />
+        <meta name="twitter:description" content={meta.ogDescription} />
+        <meta name="twitter:image" content={meta.twitterImage} />
+      </Helmet>
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-foreground mb-2">browse stores</h1>
