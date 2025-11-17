@@ -5,9 +5,25 @@ export default {
   content: ["./pages/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}", "./app/**/*.{ts,tsx}", "./src/**/*.{ts,tsx}"],
   prefix: "",
   theme: {
+    screens: {
+      'xs': '375px',   // iPhone 13 (mobile first)
+      'sm': '640px',   // Tablet portrait
+      'md': '768px',   // iPad Mini, tablet landscape
+      'lg': '1024px',  // iPad landscape, small laptops
+      'xl': '1280px',  // Desktop
+      '2xl': '1440px', // Laptop standard
+    },
     container: {
       center: true,
-      padding: "2rem",
+      padding: {
+        DEFAULT: "1rem",    // Mobile: 16px
+        xs: "1rem",
+        sm: "1.5rem",       // Tablet: 24px
+        md: "2rem",         // iPad: 32px
+        lg: "2rem",
+        xl: "2rem",
+        '2xl': "2rem",
+      },
       screens: {
         "2xl": "1400px",
       },
@@ -15,6 +31,10 @@ export default {
     extend: {
       fontFamily: {
         sans: ['Avenir', 'Avenir Next', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
+      },
+      spacing: {
+        // Mobile-first spacing scale
+        'touch-target': '44px', // Minimum touch target size
       },
       colors: {
         border: "hsl(var(--border))",
@@ -88,7 +108,16 @@ export default {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
       },
+      transitionDuration: {
+        'mobile-fast': '150ms',  // Snappy mobile interactions
+        'mobile-normal': '200ms', // Max recommended for web motion
+      },
     },
   },
   plugins: [require("tailwindcss-animate")],
+  corePlugins: {
+    // Custom handling for prefers-reduced-motion
+    animation: true,
+    transition: true,
+  },
 } satisfies Config;

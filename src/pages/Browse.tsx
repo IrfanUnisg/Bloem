@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { MobileFilterDrawer } from "@/components/MobileFilterDrawer";
 import { ItemCard } from "@/components/cards/ItemCard";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -162,28 +163,28 @@ const Browse = () => {
         <meta name="twitter:description" content={meta.ogDescription} />
         <meta name="twitter:image" content={meta.twitterImage} />
       </Helmet>
-      <div className="p-6 md:p-8">
+      <div className="p-4 sm:p-6 md:p-8">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground mb-2">browse inventory</h1>
-            <p className="text-muted-foreground">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-6 mb-6 md:mb-8">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-1 sm:mb-2">browse inventory</h1>
+            <p className="text-sm sm:text-base text-muted-foreground truncate">
               {isLoading ? "Loading..." : `${sortedItems.length} unique finds from local thrift stores`}
             </p>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 sm:gap-4">
             {user && (
-              <Link to="/cart" className="relative">
+              <Link to="/cart" className="relative flex-shrink-0">
                 <ShoppingBag className="h-6 w-6 text-foreground hover:text-primary transition-colors" />
                 {totalItems > 0 && (
-                  <span className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-accent text-xs flex items-center justify-center font-medium">
+                  <span className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-accent text-xs flex items-center justify-center font-medium text-foreground">
                     {totalItems}
                   </span>
                 )}
               </Link>
             )}
             <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="w-48">
+              <SelectTrigger className="w-auto sm:w-48 h-10 md:h-10">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -192,11 +193,27 @@ const Browse = () => {
                 <SelectItem value="price-high">price: high to low</SelectItem>
               </SelectContent>
             </Select>
+            
+            {/* Mobile Filter Drawer */}
+            <MobileFilterDrawer
+              categories={categories}
+              sizes={sizes}
+              conditions={conditions}
+              selectedCategories={selectedCategories}
+              selectedSizes={selectedSizes}
+              selectedConditions={selectedConditions}
+              priceRange={priceRange as [number, number]}
+              onCategoryChange={toggleCategory}
+              onSizeChange={toggleSize}
+              onConditionChange={toggleCondition}
+              onPriceChange={setPriceRange}
+              onClearFilters={clearFilters}
+            />
           </div>
         </div>
 
-        <div className="flex gap-8">
-          {/* Filters Sidebar */}
+        <div className="flex gap-4 sm:gap-6 lg:gap-8">
+          {/* Filters Sidebar - Desktop Only */}
           <aside className="hidden lg:block w-64 shrink-0">
             <div className="sticky top-24 space-y-6">
               <div>
@@ -286,17 +303,21 @@ const Browse = () => {
             </aside>
 
             {/* Items Grid */}
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               {isLoading ? (
                 <div className="flex items-center justify-center py-12">
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 </div>
               ) : (
                 <>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-5 lg:gap-6">
                     {sortedItems.length > 0 ? (
                       sortedItems.map((item) => (
-                        <div key={item.id} onClick={() => navigate(`/browse/${item.id}`)} className="cursor-pointer">
+                        <div 
+                          key={item.id} 
+                          onClick={() => navigate(`/browse/${item.id}`)} 
+                          className="cursor-pointer"
+                        >
                           <ItemCard variant="browse" item={item} />
                         </div>
                       ))

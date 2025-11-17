@@ -116,7 +116,13 @@ export function ItemCard({
       {/* Image */}
       <div className="relative aspect-[4/5] bg-muted overflow-hidden">
         {itemImage ? (
-          <img src={itemImage} alt={itemTitle} className="w-full h-full object-cover" />
+          <img 
+            src={itemImage} 
+            alt={itemTitle} 
+            className="w-full h-full object-cover"
+            loading="lazy"
+            decoding="async"
+          />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-muted-foreground">
             No Image
@@ -128,7 +134,8 @@ export function ItemCard({
             <button 
               onClick={handleToggleWishlist}
               disabled={isTogglingWishlist}
-              className="absolute top-3 right-3 h-9 w-9 rounded-full bg-card/90 backdrop-blur flex items-center justify-center hover:bg-card transition-colors disabled:opacity-50"
+              className="absolute top-3 right-3 h-11 w-11 md:h-9 md:w-9 rounded-full bg-card/90 backdrop-blur flex items-center justify-center hover:bg-card transition-colors disabled:opacity-50"
+              aria-label="Toggle wishlist"
             >
               {isTogglingWishlist ? (
                 <Loader2 className="h-4 w-4 animate-spin" />

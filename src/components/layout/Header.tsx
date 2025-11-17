@@ -18,10 +18,10 @@ export function Header({
   
   return <header className="sticky top-0 z-50 w-full border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex h-16 items-center justify-between">
+        <div className="flex h-16 md:h-16 items-center justify-between">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2">
-            <img src={logo} alt="bloem" className="h-16" />
+            <img src={logo} alt="bloem" className="h-12 md:h-16" />
           </Link>
 
           {/* Desktop Navigation */}
@@ -36,9 +36,9 @@ export function Header({
               </>}
 
             {variant === "authenticated" && <>
-                <Link to="/cart" className="relative">
+                <Link to="/cart" className="relative p-2">
                   <ShoppingBag className="h-5 w-5 text-foreground hover:text-primary transition-colors" />
-                  {totalItems > 0 && <span className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-accent text-xs flex items-center justify-center font-medium">
+                  {totalItems > 0 && <span className="absolute top-0 right-0 h-5 w-5 rounded-full bg-accent text-xs flex items-center justify-center font-medium text-foreground">
                       {totalItems}
                     </span>}
                 </Link>
@@ -69,7 +69,7 @@ export function Header({
           {/* Mobile Menu */}
           <Sheet>
             <SheetTrigger asChild className="md:hidden">
-              <Button variant="ghost" size="icon">
+              <Button variant="ghost" size="icon" className="h-11 w-11">
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
@@ -77,30 +77,30 @@ export function Header({
               <nav className="flex flex-col space-y-4 mt-8">
                 {variant === "public" && !user && <>
                     <Link to="/sign-in">
-                      <Button variant="ghost" className="w-full justify-start">sign in</Button>
+                      <Button variant="ghost" className="w-full justify-start h-11">sign in</Button>
                     </Link>
                     <Link to="/sign-up">
-                      <Button className="w-full">sign up</Button>
+                      <Button className="w-full h-11">sign up</Button>
                     </Link>
                   </>}
 
                 {variant === "authenticated" && <>
-                    <Link to="/cart" className="text-sm font-medium text-foreground hover:text-primary transition-colors">
+                    <Link to="/cart" className="text-sm font-medium text-foreground hover:text-primary transition-colors py-2 h-11 flex items-center">
                       cart ({totalItems})
                     </Link>
-                    <Link to="/profile" className="text-sm font-medium text-foreground hover:text-primary transition-colors">
+                    <Link to="/profile" className="text-sm font-medium text-foreground hover:text-primary transition-colors py-2 h-11 flex items-center">
                       profile
                     </Link>
                   </>}
 
                 {variant === "admin" && <>
-                    <Link to="/admin/profile" className="text-sm font-medium text-foreground hover:text-primary transition-colors">
+                    <Link to="/admin/profile" className="text-sm font-medium text-foreground hover:text-primary transition-colors py-2 h-11 flex items-center">
                       profile
                     </Link>
                   </>}
 
                 {variant === "store" && <>
-                    <Link to="/store-profile" className="text-sm font-medium text-foreground hover:text-primary transition-colors">
+                    <Link to="/store-profile" className="text-sm font-medium text-foreground hover:text-primary transition-colors py-2 h-11 flex items-center">
                       profile
                     </Link>
                   </>}
