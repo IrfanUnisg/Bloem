@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, MessageSquare, AlertCircle, CheckCircle, Loader2 } from "lucide-react";
+import { Search, MessageSquare, AlertCircle, CheckCircle, Loader2, RotateCcw } from "lucide-react";
 import { contactService, ContactMessage } from "@/services/contact.service";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -128,12 +128,12 @@ const AdminSupport = () => {
           ) : (
             <Card>
               <CardHeader>
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                   <div>
                     <CardTitle>all messages</CardTitle>
                     <CardDescription>review and respond to contact messages</CardDescription>
                   </div>
-                  <div className="relative w-64">
+                  <div className="relative w-full sm:w-64">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                       placeholder="search messages..."
@@ -156,25 +156,26 @@ const AdminSupport = () => {
                   <TabsContent value="new" className="space-y-4 mt-6">
                     {filteredMessages.filter(m => m.status === "new").map(msg => (
                       <Card key={msg.id}>
-                        <CardContent className="p-6">
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-3 mb-2">
-                                <h3 className="text-lg font-semibold text-foreground">{msg.subject}</h3>
-                                <Badge variant="destructive">new</Badge>
+                        <CardContent className="p-4 sm:p-6">
+                          <div className="flex flex-col gap-4">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
+                                <h3 className="text-base sm:text-lg font-semibold text-foreground truncate">{msg.subject}</h3>
+                                <Badge variant="destructive" className="w-fit">new</Badge>
                               </div>
-                              <p className="text-sm text-muted-foreground mb-3 whitespace-pre-wrap">{msg.message}</p>
-                              <div className="flex items-center gap-6 text-sm text-muted-foreground">
-                                <div><span className="font-medium">from:</span> {msg.name}</div>
-                                <div><span className="font-medium">email:</span> {msg.email}</div>
-                                <div><span className="font-medium">sent:</span> {new Date(msg.created_at).toLocaleString()}</div>
+                              <p className="text-sm text-muted-foreground mb-3 whitespace-pre-wrap break-words">{msg.message}</p>
+                              <div className="flex flex-col gap-2 text-xs sm:text-sm text-muted-foreground">
+                                <div className="truncate"><span className="font-medium">from:</span> {msg.name}</div>
+                                <div className="truncate"><span className="font-medium">email:</span> {msg.email}</div>
+                                <div className="truncate"><span className="font-medium">sent:</span> {new Date(msg.created_at).toLocaleString()}</div>
                               </div>
                             </div>
-                            <div className="flex gap-2 ml-4">
+                            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                               <Button
                                 size="sm"
                                 onClick={() => handleStatusChange(msg.id, "in_progress")}
                                 disabled={processingId === msg.id}
+                                className="w-full sm:w-auto"
                               >
                                 {processingId === msg.id ? (
                                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -187,6 +188,7 @@ const AdminSupport = () => {
                                 variant="outline"
                                 onClick={() => handleStatusChange(msg.id, "resolved")}
                                 disabled={processingId === msg.id}
+                                className="w-full sm:w-auto"
                               >
                                 <CheckCircle className="h-4 w-4 mr-1" />
                                 resolve
@@ -206,15 +208,15 @@ const AdminSupport = () => {
                   <TabsContent value="in_progress" className="space-y-4 mt-6">
                     {filteredMessages.filter(m => m.status === "in_progress").map(msg => (
                       <Card key={msg.id}>
-                        <CardContent className="p-6">
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-3 mb-2">
-                                <h3 className="text-lg font-semibold text-foreground">{msg.subject}</h3>
-                                <Badge variant="secondary">in progress</Badge>
+                        <CardContent className="p-4 sm:p-6">
+                          <div className="flex flex-col gap-4">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
+                                <h3 className="text-base sm:text-lg font-semibold text-foreground truncate">{msg.subject}</h3>
+                                <Badge variant="secondary" className="w-fit">in progress</Badge>
                               </div>
-                              <p className="text-sm text-muted-foreground mb-3 whitespace-pre-wrap">{msg.message}</p>
-                              <div className="text-sm text-muted-foreground">
+                              <p className="text-sm text-muted-foreground mb-3 whitespace-pre-wrap break-words">{msg.message}</p>
+                              <div className="text-xs sm:text-sm text-muted-foreground truncate">
                                 <span className="font-medium">from:</span> {msg.name} ({msg.email})
                               </div>
                             </div>
@@ -222,6 +224,7 @@ const AdminSupport = () => {
                               size="sm"
                               onClick={() => handleStatusChange(msg.id, "resolved")}
                               disabled={processingId === msg.id}
+                              className="w-full sm:w-auto"
                             >
                               {processingId === msg.id ? (
                                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -243,20 +246,19 @@ const AdminSupport = () => {
                     )}
                   </TabsContent>
 
-                  <TabsContent value="resolved" className="space-y-4 mt-6">
+                                    <TabsContent value="resolved" className="space-y-4 mt-6">
                     {filteredMessages.filter(m => m.status === "resolved").map(msg => (
                       <Card key={msg.id}>
-                        <CardContent className="p-6">
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-3 mb-2">
-                                <h3 className="text-lg font-semibold text-foreground">{msg.subject}</h3>
-                                <Badge variant="default">resolved</Badge>
+                        <CardContent className="p-4 sm:p-6">
+                          <div className="flex flex-col gap-4">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
+                                <h3 className="text-base sm:text-lg font-semibold text-foreground truncate">{msg.subject}</h3>
+                                <Badge variant="outline" className="w-fit">resolved</Badge>
                               </div>
-                              <p className="text-sm text-muted-foreground mb-3 whitespace-pre-wrap">{msg.message}</p>
-                              <div className="text-sm text-muted-foreground">
-                                {msg.name} - {msg.email}
-                                {msg.resolved_at && ` • resolved on ${new Date(msg.resolved_at).toLocaleString()}`}
+                              <p className="text-sm text-muted-foreground mb-3 whitespace-pre-wrap break-words">{msg.message}</p>
+                              <div className="text-xs sm:text-sm text-muted-foreground truncate">
+                                <span className="font-medium">from:</span> {msg.name} ({msg.email})
                               </div>
                             </div>
                             <Button
@@ -264,11 +266,15 @@ const AdminSupport = () => {
                               variant="outline"
                               onClick={() => handleStatusChange(msg.id, "new")}
                               disabled={processingId === msg.id}
+                              className="w-full sm:w-auto"
                             >
                               {processingId === msg.id ? (
                                 <Loader2 className="h-4 w-4 animate-spin" />
                               ) : (
-                                "reopen"
+                                <>
+                                  <RotateCcw className="h-4 w-4 mr-1" />
+                                  reopen
+                                </>
                               )}
                             </Button>
                           </div>
@@ -282,28 +288,26 @@ const AdminSupport = () => {
                     )}
                   </TabsContent>
 
-                  <TabsContent value="all" className="space-y-4 mt-6">
+                                    <TabsContent value="all" className="space-y-4 mt-6">
                     {filteredMessages.map(msg => (
                       <Card key={msg.id}>
-                        <CardContent className="p-6">
-                          <div className="flex items-center gap-3 mb-2">
-                            <h3 className="text-lg font-semibold text-foreground">{msg.subject}</h3>
-                            <Badge variant={msg.status === "new" ? "destructive" : msg.status === "in_progress" ? "secondary" : "default"}>
-                              {msg.status.replace("_", " ")}
-                            </Badge>
-                          </div>
-                          <p className="text-sm text-muted-foreground whitespace-pre-wrap">{msg.message}</p>
-                          <div className="text-xs text-muted-foreground mt-2">
-                            {msg.name} - {msg.email} • {new Date(msg.created_at).toLocaleString()}
+                        <CardContent className="p-4 sm:p-6">
+                          <div className="flex flex-col gap-3">
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                              <h3 className="text-base sm:text-lg font-semibold text-foreground truncate">{msg.subject}</h3>
+                              <Badge variant={msg.status === "new" ? "destructive" : msg.status === "in_progress" ? "secondary" : "outline"} className="w-fit">
+                                {msg.status}
+                              </Badge>
+                            </div>
+                            <p className="text-sm text-muted-foreground whitespace-pre-wrap break-words">{msg.message}</p>
+                            <div className="text-xs sm:text-sm text-muted-foreground">
+                              <div className="truncate"><span className="font-medium">from:</span> {msg.name}</div>
+                              <div className="truncate"><span className="font-medium">email:</span> {msg.email}</div>
+                            </div>
                           </div>
                         </CardContent>
                       </Card>
                     ))}
-                    {filteredMessages.length === 0 && (
-                      <div className="text-center py-12 text-muted-foreground">
-                        no messages found
-                      </div>
-                    )}
                   </TabsContent>
                 </Tabs>
               </CardContent>
