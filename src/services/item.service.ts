@@ -224,9 +224,14 @@ export const itemService = {
       if (filters.status) params.append('status', filters.status);
       if (filters.limit) params.append('limit', filters.limit.toString());
       if (filters.offset) params.append('offset', filters.offset.toString());
+      
+      // Add cache-busting timestamp to prevent stale data
+      params.append('_t', Date.now().toString());
 
       const headers: HeadersInit = {
         'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
       };
 
       if (session) {

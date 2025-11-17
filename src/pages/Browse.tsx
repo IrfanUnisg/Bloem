@@ -42,6 +42,24 @@ const Browse = () => {
     fetchItems();
   }, [selectedCategories, selectedSizes, selectedConditions, priceRange]);
 
+  // Refresh items when user navigates back to Browse page
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchItems();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    // Also fetch when component mounts
+    fetchItems();
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
+
   const fetchItems = async () => {
     setIsLoading(true);
     try {
