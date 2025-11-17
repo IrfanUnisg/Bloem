@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { MobileFilterDrawer } from "@/components/MobileFilterDrawer";
+import { MobileCartButton } from "@/components/MobileCartButton";
 import { ItemCard } from "@/components/cards/ItemCard";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -341,6 +342,9 @@ const Browse = () => {
             </div>
           </div>
         </div>
+        
+        {/* Mobile floating cart button */}
+        <MobileCartButton />
     </DashboardLayout>
   );
 };

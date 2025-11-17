@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
+import { MobileCartButton } from "@/components/MobileCartButton";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -90,6 +91,16 @@ const ItemDetail = () => {
       toast({
         title: "Added to cart",
         description: `${item.title} has been added to your cart.`,
+        action: (
+          <Button 
+            size="sm" 
+            variant="outline" 
+            onClick={() => navigate('/cart')}
+            className="shrink-0"
+          >
+            View Cart
+          </Button>
+        ),
       });
     } catch (error: any) {
       toast({
@@ -353,6 +364,9 @@ const ItemDetail = () => {
           </div>
         </div>
       </main>
+      
+      {/* Mobile floating cart button */}
+      <MobileCartButton />
       
       <Footer />
     </div>

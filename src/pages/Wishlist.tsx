@@ -75,6 +75,16 @@ const Wishlist = () => {
       toast({
         title: "Added to cart",
         description: "Item has been added to your cart.",
+        action: (
+          <Button 
+            size="sm" 
+            variant="outline" 
+            onClick={() => navigate('/cart')}
+            className="shrink-0"
+          >
+            View Cart
+          </Button>
+        ),
       });
     } catch (error: any) {
       console.error("Error adding to cart:", error);
