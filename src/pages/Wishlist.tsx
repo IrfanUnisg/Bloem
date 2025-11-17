@@ -76,8 +76,6 @@ const Wishlist = () => {
         title: "Added to cart",
         description: "Item has been added to your cart.",
       });
-      // Optionally remove from wishlist after adding to cart
-      // await handleRemoveFromWishlist(itemId);
     } catch (error: any) {
       console.error("Error adding to cart:", error);
       toast({

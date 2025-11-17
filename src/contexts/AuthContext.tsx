@@ -1,7 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { User as SupabaseUser } from "@supabase/supabase-js";
 import { authService } from "@/services/auth.service";
-// import { userService } from "@/services/user.service"; // TODO: Enable after Prisma migration
 
 // Extended user type with metadata
 interface AuthUser extends SupabaseUser {
@@ -73,17 +72,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         userData.role = authUser.user_metadata?.role || "seller";
         userData.name = authUser.user_metadata?.name;
         
-        // TODO: Sync user profile to database after Prisma migration
-        // try {
-        //   await userService.syncUserProfile(authUser.id, authUser.email!, {
-        //     name: authUser.user_metadata?.name,
-        //     phone: authUser.user_metadata?.phone,
-        //     role: authUser.user_metadata?.role,
-        //   });
-        // } catch (dbError) {
-        //   console.error("Error syncing user to database:", dbError);
-        // }
-        
         setUser(userData);
         setIsLoading(false);
         return { success: true };
@@ -125,17 +113,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       });
       
       if (authUser) {
-        // TODO: Sync user profile to database after Prisma migration
-        // try {
-        //   await userService.syncUserProfile(authUser.id, email, {
-        //     name,
-        //     phone,
-        //     role,
-        //   });
-        // } catch (dbError) {
-        //   console.error("Error creating user profile in database:", dbError);
-        // }
-        
         // Note: User will need to verify email before being fully authenticated
         // Supabase will send a confirmation email automatically
         setIsLoading(false);
