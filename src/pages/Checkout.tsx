@@ -181,11 +181,45 @@ const Checkout = () => {
 
         // If no existing order, create one
         if (!currentOrderId) {
-          // Use item_id (snake_case) from database, not itemId
-          const itemIds = items.map(cartItem => (cartItem as any).item_id || cartItem.itemId);
-          const storeId = (items[0].item as any)?.store_id || items[0].item?.storeId;
+          // Validate we have items with proper data
+          if (!items || items.length === 0) {
+            throw new Error('No items in cart');
+          }
+
+          console.log('DEBUG: Cart items:', JSON.stringify(items, null, 2));
           
-          console.log('DEBUG: Creating order with itemIds:', itemIds, 'storeId:', storeId);
+          // Use item_id (snake_case) from database, not itemId
+          const itemIds = items.map(cartItem => {
+            const id = (cartItem as any).item_id || cartItem.itemId || cartItem.item?.id;
+            if (!id) {
+              console.error('Cart item missing ID:', cartItem);
+              throw new Error('Invalid cart item: missing item ID');
+            }
+            return id;
+          });
+          
+          // Extract store ID from the first item
+          const firstCartItem = items[0];
+          const firstItem = firstCartItem?.item;
+          
+          // Try multiple ways to get store ID
+          let storeId = null;
+          if (firstItem?.store?.id) {
+            storeId = firstItem.store.id;
+          } else if ((firstItem as any)?.store_id) {
+            storeId = (firstItem as any).store_id;
+          } else if ((firstCartItem as any)?.store_id) {
+            storeId = (firstCartItem as any).store_id;
+          }
+          
+          console.log('DEBUG: Extracted data - itemIds:', itemIds, 'storeId:', storeId);
+          console.log('DEBUG: First cart item:', firstCartItem);
+          console.log('DEBUG: First item:', firstItem);
+          
+          if (!storeId) {
+            console.error('Failed to extract store ID from cart items');
+            throw new Error('Unable to determine store for checkout. Please try adding the item to your cart again.');
+          }
           
           const order = await orderService.createOrder(user.id, itemIds, storeId);
           console.log('DEBUG: Order created successfully:', order.id);

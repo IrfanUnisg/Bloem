@@ -33,9 +33,12 @@ serve(async (req) => {
       }
     )
     
-    // Still verify the user authentication from the request
+    // Get and validate the user authentication from the request
     const authHeader = req.headers.get('Authorization')
+    console.log('DEBUG: Auth header present:', !!authHeader)
+    
     if (!authHeader) {
+      console.error('No authorization header in request')
       throw new Error('No authorization header')
     }
 

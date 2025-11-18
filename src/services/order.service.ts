@@ -13,10 +13,19 @@ export const orderService = {
    */
   async createOrder(buyerId: string, itemIds: string[], storeId?: string): Promise<OrderWithItems> {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        throw new Error('Not authenticated');
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) {
+        console.error('Session error in createOrder:', sessionError);
+        throw new Error('Authentication failed: ' + sessionError.message);
       }
+      
+      if (!session) {
+        console.error('No session found in createOrder');
+        throw new Error('Not authenticated - please sign in again');
+      }
+
+      console.log('DEBUG createOrder: Has session, calling API');
 
       const response = await fetch(EDGE_FUNCTIONS.ORDERS, {
         method: 'POST',
