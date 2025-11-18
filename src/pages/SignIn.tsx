@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { Header } from "@/components/layout/Header";
 import { useAuth } from "@/contexts/AuthContext";
@@ -15,6 +15,7 @@ import { pageMetadata } from "@/lib/seo";
 const SignIn = () => {
   const meta = pageMetadata.signIn();
   const navigate = useNavigate();
+  const location = useLocation();
   const { login, logout, isLoading, user } = useAuth();
   const { toast } = useToast();
   const [formData, setFormData] = useState({
@@ -53,17 +54,24 @@ const SignIn = () => {
           }
         }
         
-        const destination = user.role === "admin" 
-          ? "/admin/stores" 
-          : user.role === "store" 
-          ? "/store/inventory" 
-          : "/dashboard";
-        navigate(destination);
+        // Check if there's a redirect path from the ProtectedRoute
+        const from = (location.state as any)?.from;
+        
+        // Determine destination: redirect to intended page or role-specific dashboard
+        const destination = from || (
+          user.role === "admin" 
+            ? "/admin/stores" 
+            : user.role === "store" 
+            ? "/store/inventory" 
+            : "/dashboard"
+        );
+        
+        navigate(destination, { replace: true });
       }
     };
     
     checkStoreAndRedirect();
-  }, [user, navigate, logout, toast]);
+  }, [user, navigate, logout, toast, location]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
