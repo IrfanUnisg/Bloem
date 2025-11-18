@@ -57,6 +57,14 @@ serve(async (req) => {
 
     if (order.status === 'COMPLETED') {
       // Order already completed
+      // Ensure cart is cleared for this order's items
+      const itemIds = order.items.map((oi) => oi.item_id)
+      await supabaseClient
+        .from('cart_items')
+        .delete()
+        .eq('user_id', order.buyer_id)
+        .in('item_id', itemIds)
+      
       return new Response(
         JSON.stringify({ order, message: 'Order already completed' }),
         {
@@ -80,12 +88,13 @@ serve(async (req) => {
       .single()
 
     if (updateError) {
-      throw updateError
+      console.error('Failed to update order status:', updateError)
+      throw new Error('Failed to complete order. Please contact support.')
     }
 
     // Update items to SOLD status
     const itemIds = order.items.map((oi) => oi.item_id)
-    await supabaseClient
+    const { error: itemsUpdateError } = await supabaseClient
       .from('items')
       .update({
         status: 'SOLD',
@@ -94,12 +103,22 @@ serve(async (req) => {
       })
       .in('id', itemIds)
 
-    // Clear cart items after successful payment
-    await supabaseClient
+    if (itemsUpdateError) {
+      console.error('Failed to update item status:', itemsUpdateError)
+      // Don't throw here - order is already completed, just log the error
+    }
+
+    // Clear cart items ONLY after successful payment and order completion
+    const { error: cartClearError } = await supabaseClient
       .from('cart_items')
       .delete()
       .eq('user_id', order.buyer_id)
       .in('item_id', itemIds)
+
+    if (cartClearError) {
+      console.error('Failed to clear cart items:', cartClearError)
+      // Don't throw here - order is completed, cart can be cleared manually
+    }
 
     // Create transactions for each item
     for (const orderItem of order.items) {
@@ -111,7 +130,7 @@ serve(async (req) => {
       const sellerPayout = orderItem.seller_payout
       const platformFee = orderItem.platform_fee
 
-      await supabaseClient
+      const { error: transactionError } = await supabaseClient
         .from('transactions')
         .insert({
           order_id: order.id,
@@ -124,6 +143,11 @@ serve(async (req) => {
           status: 'COMPLETED',
           completed_at: new Date().toISOString(),
         })
+
+      if (transactionError) {
+        console.error('Failed to create transaction:', transactionError)
+        // Don't throw here - order is completed, transactions can be created manually
+      }
     }
 
     console.log(`Order ${order.order_number} completed successfully`)

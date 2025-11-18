@@ -49,7 +49,7 @@ const OrderConfirmation = () => {
           const { data: { session } } = await supabase.auth.getSession();
           
           if (!session) {
-            throw new Error('Not authenticated');
+            throw new Error('Not authenticated. Please sign in again.');
           }
 
           const response = await fetch(EDGE_FUNCTIONS.CONFIRM_PAYMENT, {
@@ -63,14 +63,28 @@ const OrderConfirmation = () => {
 
           if (!response.ok) {
             const error = await response.json();
-            throw new Error(error.error || 'Failed to confirm payment');
+            console.error('Payment confirmation error:', error);
+            
+            // Provide more specific error messages
+            if (response.status === 400) {
+              throw new Error(error.error || 'Payment verification failed. Your payment may have been processed, but order completion failed. Please check your orders or contact support.');
+            } else if (response.status === 404) {
+              throw new Error('Order not found. Please check your orders page or contact support.');
+            } else {
+              throw new Error(error.error || 'Failed to confirm payment. Please contact support with your order details.');
+            }
           }
 
           const { order: confirmedOrder } = await response.json();
           setOrder(confirmedOrder);
           
           // Refresh cart to sync with database after payment confirmation
-          await refreshCart();
+          try {
+            await refreshCart();
+          } catch (cartError) {
+            console.warn('Cart refresh failed, but order was completed successfully:', cartError);
+            // Don't throw - the order is complete, cart refresh is non-critical
+          }
         } else if (orderId) {
           // Just load the order
           const loadedOrder = await orderService.getOrderById(orderId);
@@ -78,18 +92,29 @@ const OrderConfirmation = () => {
             setOrder(loadedOrder);
             
             // Refresh cart to ensure it's in sync
-            await refreshCart();
+            try {
+              await refreshCart();
+            } catch (cartError) {
+              console.warn('Cart refresh failed:', cartError);
+              // Don't throw - order display is more important
+            }
           } else {
-            throw new Error('Order not found');
+            throw new Error('Order not found. Please check your orders page.');
           }
         }
       } catch (error: any) {
         console.error("Error loading order:", error);
         toast({
           title: "Error",
-          description: error.message || "Failed to load order details.",
+          description: error.message || "Failed to load order details. Please check your orders page.",
           variant: "destructive",
+          duration: 10000, // Show error longer for important messages
         });
+        
+        // Don't navigate away immediately - give user time to read error
+        setTimeout(() => {
+          navigate("/orders");
+        }, 3000);
       } finally {
         setIsLoading(false);
         setIsConfirming(false);
