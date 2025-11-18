@@ -230,25 +230,29 @@ export const itemService = {
 
       const headers: HeadersInit = {
         'Content-Type': 'application/json',
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache',
       };
 
       if (session) {
         headers['Authorization'] = `Bearer ${session.access_token}`;
       }
 
+      console.log('🌐 API: Calling', `${EDGE_FUNCTIONS.ITEMS}?${params}`);
+      
       const response = await fetch(`${EDGE_FUNCTIONS.ITEMS}?${params}`, {
         method: 'GET',
         headers,
       });
 
+      console.log('📡 API: Response status:', response.status);
+
       if (!response.ok) {
         const error = await response.json();
+        console.error('❌ API: Error response:', error);
         throw new Error(error.error || 'Failed to fetch items');
       }
 
       const { items } = await response.json();
+      console.log('📋 API: Received items:', items?.length, items);
       return items as ItemWithRelations[];
     } catch (error) {
       console.error('Error browsing items:', error);
