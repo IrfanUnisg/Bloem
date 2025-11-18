@@ -58,10 +58,10 @@ const App = () => (
                 <Route path="/contact" element={<Contact />} />
                 <Route path="/faq" element={<FAQ />} />
                 <Route path="/terms" element={<Terms />} />
+                <Route path="/browse-stores" element={<BrowseStores />} />
                 
                 {/* Protected routes - require authentication */}
                 <Route path="/browse" element={<ProtectedRoute><Browse /></ProtectedRoute>} />
-                <Route path="/browse-stores" element={<ProtectedRoute><BrowseStores /></ProtectedRoute>} />
                 <Route path="/browse/:id" element={<ProtectedRoute><ItemDetail /></ProtectedRoute>} />
                 <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
                 <Route path="/upload" element={<ProtectedRoute><Upload /></ProtectedRoute>} />
