@@ -76,6 +76,11 @@ const StoreAnalytics = () => {
       
       setCategoryData(categories);
 
+      console.log('Store Stats:', storeStats);
+      console.log('All Items:', allItems);
+      console.log('Inventory Breakdown:', { storeOwned, consignment, pendingDropoff });
+      console.log('Category Data:', categories);
+
     } catch (error) {
       console.error("Error loading analytics:", error);
       toast({

@@ -1,18 +1,17 @@
 import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { ItemCard } from "@/components/cards/ItemCard";
-import { StatCard } from "@/components/cards/StatCard";
 import { EmptyState } from "@/components/placeholders/EmptyState";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Package, DollarSign, TrendingUp, Upload, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { itemService } from "@/services/item.service";
 import { orderService } from "@/services/order.service";
 import { ItemWithRelations, OrderWithItems } from "@/types";
 import { useToast } from "@/hooks/use-toast";
+import { Upload, Package } from "lucide-react";
 
 type ItemStatus = "all" | "FOR_SALE" | "SOLD" | "PENDING_DROPOFF" | "RESERVED";
 
@@ -140,6 +139,10 @@ const Dashboard = () => {
   console.log('Items Sold:', stats.itemsSold);
   console.log('Total orders:', orders.length);
   console.log('User ID:', user?.id);
+
+  // Add a helper function to check user roles
+  const isStoreOrAdmin = user?.role === "store" || user?.role === "admin";
+
   return (
     <DashboardLayout>
       <div className="p-6 md:p-8">
@@ -159,7 +162,7 @@ const Dashboard = () => {
 
         <Tabs defaultValue="listings" className="space-y-6">
           <TabsList>
-            <TabsTrigger value="listings">My Listings</TabsTrigger>
+            {/* Removed My Listings tab as Earnings is no longer present */}
           </TabsList>
 
           <TabsContent value="listings" className="space-y-6">
@@ -212,92 +215,6 @@ const Dashboard = () => {
                 actionLabel="Upload Item" 
                 actionHref="/upload" 
               />
-            )}
-          </TabsContent>
-            {isLoadingOrders ? (
-              <div className="flex justify-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
-            ) : (
-              <>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <StatCard 
-                    label="Total Earnings" 
-                    value={`€${stats.totalEarnings.toFixed(2)}`}
-                    icon={<DollarSign className="h-6 w-6" />} 
-                  />
-                  <StatCard 
-                    label="Pending Payouts" 
-                    value={`€${stats.pendingPayouts.toFixed(2)}`}
-                    icon={<Package className="h-6 w-6" />} 
-                  />
-                  <StatCard 
-                    label="Items Sold" 
-                    value={String(stats.itemsSold)}
-                    icon={<TrendingUp className="h-6 w-6" />} 
-                  />
-                </div>
-
-                {/* Transaction History */}
-                <div>
-                  <h2 className="text-xl font-semibold text-foreground mb-4">Transaction History</h2>
-                  {orders.length > 0 ? (
-                    <div className="border rounded-lg overflow-hidden">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Date</TableHead>
-                            <TableHead>Order ID</TableHead>
-                            <TableHead>Items</TableHead>
-                            <TableHead>Your Earnings</TableHead>
-                            <TableHead>Status</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {orders.map((order) => {
-                            // Only show consignment items for sellers
-                            const sellerItems = order.items?.filter((oi: any) => {
-                              const isMyItem = oi.item?.seller_id === user?.id;
-                              const isConsignment = oi.item?.is_consignment;
-                              return isMyItem && isConsignment;
-                            }) || [];
-                            const sellerEarnings = sellerItems.reduce((sum: number, oi: any) => sum + (oi.seller_payout || 0), 0);
-                            
-                            // Skip orders with no consignment items from this seller
-                            if (sellerItems.length === 0) return null;
-                            
-                            return (
-                              <TableRow key={order.id}>
-                                <TableCell>{new Date(order.createdAt).toLocaleDateString()}</TableCell>
-                                <TableCell className="font-mono text-sm">{order.orderNumber}</TableCell>
-                                <TableCell>{sellerItems.length} item{sellerItems.length !== 1 ? 's' : ''}</TableCell>
-                                <TableCell className="font-medium">€{sellerEarnings.toFixed(2)}</TableCell>
-                                <TableCell>
-                                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                    order.status === "COMPLETED" 
-                                      ? "bg-green-100 text-green-800" 
-                                      : order.status === "RESERVED"
-                                      ? "bg-blue-100 text-blue-800"
-                                      : "bg-gray-100 text-gray-800"
-                                  }`}>
-                                    {order.status.replace('_', ' ')}
-                                  </span>
-                                </TableCell>
-                              </TableRow>
-                            );
-                          })}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  ) : (
-                    <EmptyState 
-                      icon={<DollarSign className="h-8 w-8" />} 
-                      title="No transactions yet" 
-                      description="Your sales will appear here once customers purchase your items" 
-                    />
-                  )}
-                </div>
-              </>
             )}
           </TabsContent>
         </Tabs>
