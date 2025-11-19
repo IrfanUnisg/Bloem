@@ -146,26 +146,97 @@ export const orderService = {
    */
   async getOrdersBySeller(sellerId: string): Promise<OrderWithItems[]> {
     try {
-      const { data: orders, error } = await supabase
+      // First get all completed and reserved orders
+      const { data: orders, error: ordersError } = await supabase
         .from('orders')
-        .select(`
-          *,
-          items:order_items(
-            *,
-            item:items!inner(*)
-          ),
-          buyer:users!orders_buyer_id_fkey(*),
-          store:stores!orders_store_id_fkey(*)
-        `)
-        .eq('items.item.seller_id', sellerId)
+        .select('*')
+        .in('status', ['COMPLETED', 'RESERVED'])
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      
-      // Filter out orders where none of the items belong to the seller
-      const filteredOrders = (orders || []).filter(order => 
-        order.items?.some((oi: any) => oi.item?.seller_id === sellerId)
-      );
+      if (ordersError) {
+        console.error('Error fetching orders:', ordersError);
+        throw ordersError;
+      }
+
+      console.log('Orders fetched:', orders?.length || 0);
+
+      if (!orders || orders.length === 0) {
+        return [];
+      }
+
+      // Get order IDs
+      const orderIds = orders.map(o => o.id);
+
+      // Fetch order_items WITHOUT nested item data to avoid RLS issues
+      const { data: orderItems, error: itemsError } = await supabase
+        .from('order_items')
+        .select('*')
+        .in('order_id', orderIds);
+
+      if (itemsError) {
+        console.error('Error fetching order_items:', itemsError);
+      }
+
+      console.log('Order items fetched:', orderItems?.length || 0);
+
+      if (!orderItems || orderItems.length === 0) {
+        return [];
+      }
+
+      // Get unique item IDs
+      const itemIds = [...new Set(orderItems.map((oi: any) => oi.item_id))];
+
+      // Fetch items directly - this bypasses the nested RLS issue
+      const { data: items, error: itemsDetailError } = await supabase
+        .from('items')
+        .select('*')
+        .in('id', itemIds);
+
+      if (itemsDetailError) {
+        console.error('Error fetching items:', itemsDetailError);
+      }
+
+      console.log('Items fetched:', items?.length || 0);
+
+      // Create a map of items by ID
+      const itemsMap = new Map(items?.map((i: any) => [i.id, i]) || []);
+
+      // Enrich order_items with item data
+      const enrichedOrderItems = orderItems.map((oi: any) => ({
+        ...oi,
+        item: itemsMap.get(oi.item_id)
+      }));
+
+      // Group order_items by order_id
+      const itemsByOrder = new Map();
+      enrichedOrderItems.forEach((oi: any) => {
+        if (!itemsByOrder.has(oi.order_id)) {
+          itemsByOrder.set(oi.order_id, []);
+        }
+        itemsByOrder.get(oi.order_id).push(oi);
+      });
+
+      // Combine orders with their items
+      const ordersWithItems = orders.map(order => ({
+        ...order,
+        items: itemsByOrder.get(order.id) || []
+      }));
+
+      console.log('Orders with items combined:', ordersWithItems.length);
+
+      // Filter to only include orders with items sold by this seller
+      const filteredOrders = ordersWithItems.filter(order => {
+        const hasSellerItems = order.items?.some((oi: any) => {
+          const matches = oi.item?.seller_id === sellerId;
+          if (matches) {
+            console.log('Found seller item:', oi.item?.title, 'payout:', oi.seller_payout);
+          }
+          return matches;
+        });
+        return hasSellerItems;
+      });
+
+      console.log('Orders with seller items:', filteredOrders.length);
 
       return filteredOrders as OrderWithItems[];
     } catch (error) {

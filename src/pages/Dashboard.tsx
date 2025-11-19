@@ -58,6 +58,12 @@ const Dashboard = () => {
     setIsLoadingOrders(true);
     try {
       const userOrders = await orderService.getOrdersBySeller(user.id);
+      console.log('=== DASHBOARD fetchUserOrders ===');
+      console.log('Total orders fetched:', userOrders.length);
+      if (userOrders.length > 0) {
+        console.log('First order:', userOrders[0]);
+        console.log('First order items:', userOrders[0].items);
+      }
       setOrders(userOrders);
     } catch (error) {
       console.error("Error fetching orders:", error);
@@ -102,17 +108,38 @@ const Dashboard = () => {
     totalEarnings: orders
       .filter(o => o.status === "COMPLETED")
       .reduce((sum, order) => {
-        const sellerItems = order.items?.filter(oi => oi.item?.sellerId === user?.id) || [];
-        return sum + sellerItems.reduce((itemSum, oi) => itemSum + oi.sellerPayout, 0);
+        // Only include consignment items where user is the seller
+        const sellerItems = order.items?.filter((oi: any) => {
+          const isMyItem = oi.item?.seller_id === user?.id;
+          const isConsignment = oi.item?.is_consignment;
+          return isMyItem && isConsignment;
+        }) || [];
+        const earnings = sellerItems.reduce((itemSum: number, oi: any) => itemSum + (oi.seller_payout || 0), 0);
+        console.log('COMPLETED Order:', order.orderNumber, 'My consignment items:', sellerItems.length, 'Earnings:', earnings);
+        return sum + earnings;
       }, 0),
     pendingPayouts: orders
       .filter(o => o.status === "RESERVED")
       .reduce((sum, order) => {
-        const sellerItems = order.items?.filter(oi => oi.item?.sellerId === user?.id) || [];
-        return sum + sellerItems.reduce((itemSum, oi) => itemSum + oi.sellerPayout, 0);
+        // Only include consignment items where user is the seller
+        const sellerItems = order.items?.filter((oi: any) => {
+          const isMyItem = oi.item?.seller_id === user?.id;
+          const isConsignment = oi.item?.is_consignment;
+          return isMyItem && isConsignment;
+        }) || [];
+        const earnings = sellerItems.reduce((itemSum: number, oi: any) => itemSum + (oi.seller_payout || 0), 0);
+        console.log('RESERVED Order:', order.orderNumber, 'My consignment items:', sellerItems.length, 'Pending:', earnings);
+        return sum + earnings;
       }, 0),
     itemsSold: items.filter(i => i.status === "SOLD").length,
   };
+  
+  console.log('=== DASHBOARD STATS ===');
+  console.log('Total Earnings (completed):', stats.totalEarnings);
+  console.log('Pending Payouts (reserved):', stats.pendingPayouts);
+  console.log('Items Sold:', stats.itemsSold);
+  console.log('Total orders:', orders.length);
+  console.log('User ID:', user?.id);
   return (
     <DashboardLayout>
       <div className="p-6 md:p-8">
@@ -133,7 +160,6 @@ const Dashboard = () => {
         <Tabs defaultValue="listings" className="space-y-6">
           <TabsList>
             <TabsTrigger value="listings">My Listings</TabsTrigger>
-            <TabsTrigger value="earnings">Earnings</TabsTrigger>
           </TabsList>
 
           <TabsContent value="listings" className="space-y-6">
@@ -188,9 +214,6 @@ const Dashboard = () => {
               />
             )}
           </TabsContent>
-
-          <TabsContent value="earnings" className="space-y-6">
-            {/* Stats */}
             {isLoadingOrders ? (
               <div className="flex justify-center py-12">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -232,8 +255,16 @@ const Dashboard = () => {
                         </TableHeader>
                         <TableBody>
                           {orders.map((order) => {
-                            const sellerItems = order.items?.filter(oi => oi.item?.sellerId === user?.id) || [];
-                            const sellerEarnings = sellerItems.reduce((sum, oi) => sum + oi.sellerPayout, 0);
+                            // Only show consignment items for sellers
+                            const sellerItems = order.items?.filter((oi: any) => {
+                              const isMyItem = oi.item?.seller_id === user?.id;
+                              const isConsignment = oi.item?.is_consignment;
+                              return isMyItem && isConsignment;
+                            }) || [];
+                            const sellerEarnings = sellerItems.reduce((sum: number, oi: any) => sum + (oi.seller_payout || 0), 0);
+                            
+                            // Skip orders with no consignment items from this seller
+                            if (sellerItems.length === 0) return null;
                             
                             return (
                               <TableRow key={order.id}>
