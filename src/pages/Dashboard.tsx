@@ -3,12 +3,14 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { ItemCard } from "@/components/cards/ItemCard";
 import { EmptyState } from "@/components/placeholders/EmptyState";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { itemService } from "@/services/item.service";
 import { orderService } from "@/services/order.service";
+import { supabase } from "@/lib/supabase";
 import { ItemWithRelations, OrderWithItems } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { Upload, Package } from "lucide-react";
@@ -103,42 +105,53 @@ const Dashboard = () => {
     filterStatus === "all" ? true : item.status === filterStatus
   );
 
-  const stats = {
-    totalEarnings: orders
-      .filter(o => o.status === "COMPLETED")
-      .reduce((sum, order) => {
-        // Only include consignment items where user is the seller
-        const sellerItems = order.items?.filter((oi: any) => {
-          const isMyItem = oi.item?.seller_id === user?.id;
-          const isConsignment = oi.item?.is_consignment;
-          return isMyItem && isConsignment;
-        }) || [];
-        const earnings = sellerItems.reduce((itemSum: number, oi: any) => itemSum + (oi.seller_payout || 0), 0);
-        console.log('COMPLETED Order:', order.orderNumber, 'My consignment items:', sellerItems.length, 'Earnings:', earnings);
-        return sum + earnings;
-      }, 0),
-    pendingPayouts: orders
-      .filter(o => o.status === "RESERVED")
-      .reduce((sum, order) => {
-        // Only include consignment items where user is the seller
-        const sellerItems = order.items?.filter((oi: any) => {
-          const isMyItem = oi.item?.seller_id === user?.id;
-          const isConsignment = oi.item?.is_consignment;
-          return isMyItem && isConsignment;
-        }) || [];
-        const earnings = sellerItems.reduce((itemSum: number, oi: any) => itemSum + (oi.seller_payout || 0), 0);
-        console.log('RESERVED Order:', order.orderNumber, 'My consignment items:', sellerItems.length, 'Pending:', earnings);
-        return sum + earnings;
-      }, 0),
-    itemsSold: items.filter(i => i.status === "SOLD").length,
+  // Calculate stats using the same approach as Profile page
+  const [stats, setStats] = useState({
+    totalEarnings: 0,
+    pendingPayouts: 0,
+    itemsSold: 0,
+  });
+
+  useEffect(() => {
+    if (user) {
+      fetchStats();
+    }
+  }, [user, items]);
+
+  const fetchStats = async () => {
+    if (!user) return;
+
+    try {
+      // Get total earnings from completed transactions
+      const { data: completedTransactions } = await supabase
+        .from('transactions')
+        .select('seller_earnings')
+        .eq('seller_id', user.id)
+        .eq('status', 'COMPLETED');
+
+      const totalEarnings = completedTransactions?.reduce((sum, t) => sum + (t.seller_earnings || 0), 0) || 0;
+
+      // Get pending payouts from pending transactions
+      const { data: pendingTransactions } = await supabase
+        .from('transactions')
+        .select('seller_earnings')
+        .eq('seller_id', user.id)
+        .eq('status', 'PENDING');
+
+      const pendingPayouts = pendingTransactions?.reduce((sum, t) => sum + (t.seller_earnings || 0), 0) || 0;
+
+      // Get items sold count
+      const itemsSold = items.filter(i => i.status === "SOLD").length;
+
+      setStats({
+        totalEarnings,
+        pendingPayouts,
+        itemsSold,
+      });
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+    }
   };
-  
-  console.log('=== DASHBOARD STATS ===');
-  console.log('Total Earnings (completed):', stats.totalEarnings);
-  console.log('Pending Payouts (reserved):', stats.pendingPayouts);
-  console.log('Items Sold:', stats.itemsSold);
-  console.log('Total orders:', orders.length);
-  console.log('User ID:', user?.id);
 
   // Add a helper function to check user roles
   const isStoreOrAdmin = user?.role === "store" || user?.role === "admin";
@@ -162,8 +175,72 @@ const Dashboard = () => {
 
         <Tabs defaultValue="listings" className="space-y-6">
           <TabsList>
-            {/* Removed My Listings tab as Earnings is no longer present */}
+            <TabsTrigger value="listings">My Listings</TabsTrigger>
+            <TabsTrigger value="analytics">Analytics</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="analytics" className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <Card className="p-6">
+                <div className="flex flex-col items-center text-center">
+                  <div className="text-4xl font-bold text-primary mb-2">
+                    {stats.itemsSold}
+                  </div>
+                  <p className="text-sm text-muted-foreground">items sold</p>
+                </div>
+              </Card>
+              
+              <Card className="p-6">
+                <div className="flex flex-col items-center text-center">
+                  <div className="text-4xl font-bold text-primary mb-2">
+                    €{stats.totalEarnings.toFixed(2)}
+                  </div>
+                  <p className="text-sm text-muted-foreground">total earnings</p>
+                </div>
+              </Card>
+              
+              <Card className="p-6">
+                <div className="flex flex-col items-center text-center">
+                  <div className="text-4xl font-bold text-primary mb-2">
+                    €{stats.pendingPayouts.toFixed(2)}
+                  </div>
+                  <p className="text-sm text-muted-foreground">pending payouts</p>
+                </div>
+              </Card>
+            </div>
+
+            <Card className="p-6">
+              <h3 className="text-xl font-semibold text-foreground mb-6">
+                earnings overview
+              </h3>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between py-3 border-b">
+                  <span className="text-muted-foreground">completed orders</span>
+                  <span className="font-semibold text-foreground">
+                    €{stats.totalEarnings.toFixed(2)}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between py-3 border-b">
+                  <span className="text-muted-foreground">reserved (pending)</span>
+                  <span className="font-semibold text-foreground">
+                    €{stats.pendingPayouts.toFixed(2)}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between py-3 border-b">
+                  <span className="text-muted-foreground">items sold</span>
+                  <span className="font-semibold text-foreground">
+                    {stats.itemsSold}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between py-3">
+                  <span className="text-muted-foreground">active listings</span>
+                  <span className="font-semibold text-foreground">
+                    {items.filter(i => i.status === "FOR_SALE").length}
+                  </span>
+                </div>
+              </div>
+            </Card>
+          </TabsContent>
 
           <TabsContent value="listings" className="space-y-6">
             {/* Filter Tabs */}
