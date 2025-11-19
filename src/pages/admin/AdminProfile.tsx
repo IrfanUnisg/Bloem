@@ -5,11 +5,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { User, Mail, Phone, Shield, LogOut, Key, Activity } from "lucide-react";
+import { User, Mail, Phone, Shield, LogOut, Activity } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { ChangePasswordDialog } from "@/components/ChangePasswordDialog";
 
 const AdminProfile = () => {
   const { toast } = useToast();
@@ -36,13 +37,6 @@ const AdminProfile = () => {
     toast({
       title: "logged out",
       description: "you have been successfully logged out.",
-    });
-  };
-
-  const handleChangePassword = () => {
-    toast({
-      title: "password change initiated",
-      description: "check your email for password reset instructions.",
     });
   };
 
@@ -192,22 +186,7 @@ const AdminProfile = () => {
                   <p className="font-medium text-foreground">change password</p>
                   <p className="text-sm text-muted-foreground">update your account password</p>
                 </div>
-                <Button variant="outline" onClick={handleChangePassword}>
-                  <Key className="mr-2 h-4 w-4" />
-                  change password
-                </Button>
-              </div>
-
-              <div className="border-t pt-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium text-foreground">two-factor authentication</p>
-                    <p className="text-sm text-muted-foreground">add an extra layer of security</p>
-                  </div>
-                  <Button variant="outline">
-                    enable 2fa
-                  </Button>
-                </div>
+                <ChangePasswordDialog />
               </div>
 
               <div className="border-t pt-4">
