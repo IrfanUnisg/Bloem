@@ -108,7 +108,6 @@ const Dashboard = () => {
   // Calculate stats using the same approach as Profile page
   const [stats, setStats] = useState({
     totalEarnings: 0,
-    pendingPayouts: 0,
     itemsSold: 0,
   });
 
@@ -131,21 +130,11 @@ const Dashboard = () => {
 
       const totalEarnings = completedTransactions?.reduce((sum, t) => sum + (t.seller_earnings || 0), 0) || 0;
 
-      // Get pending payouts from pending transactions
-      const { data: pendingTransactions } = await supabase
-        .from('transactions')
-        .select('seller_earnings')
-        .eq('seller_id', user.id)
-        .eq('status', 'PENDING');
-
-      const pendingPayouts = pendingTransactions?.reduce((sum, t) => sum + (t.seller_earnings || 0), 0) || 0;
-
       // Get items sold count
       const itemsSold = items.filter(i => i.status === "SOLD").length;
 
       setStats({
         totalEarnings,
-        pendingPayouts,
         itemsSold,
       });
     } catch (error) {
@@ -180,7 +169,7 @@ const Dashboard = () => {
           </TabsList>
 
           <TabsContent value="analytics" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Card className="p-6">
                 <div className="flex flex-col items-center text-center">
                   <div className="text-4xl font-bold text-primary mb-2">
@@ -198,15 +187,6 @@ const Dashboard = () => {
                   <p className="text-sm text-muted-foreground">total earnings</p>
                 </div>
               </Card>
-              
-              <Card className="p-6">
-                <div className="flex flex-col items-center text-center">
-                  <div className="text-4xl font-bold text-primary mb-2">
-                    €{stats.pendingPayouts.toFixed(2)}
-                  </div>
-                  <p className="text-sm text-muted-foreground">pending payouts</p>
-                </div>
-              </Card>
             </div>
 
             <Card className="p-6">
@@ -215,15 +195,9 @@ const Dashboard = () => {
               </h3>
               <div className="space-y-4">
                 <div className="flex items-center justify-between py-3 border-b">
-                  <span className="text-muted-foreground">completed orders</span>
+                  <span className="text-muted-foreground">total earnings</span>
                   <span className="font-semibold text-foreground">
                     €{stats.totalEarnings.toFixed(2)}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between py-3 border-b">
-                  <span className="text-muted-foreground">reserved (pending)</span>
-                  <span className="font-semibold text-foreground">
-                    €{stats.pendingPayouts.toFixed(2)}
                   </span>
                 </div>
                 <div className="flex items-center justify-between py-3 border-b">
