@@ -79,6 +79,16 @@ export const itemService = {
         throw new Error('Not authenticated');
       }
 
+      // Determine if this is a consignment item or store-owned
+      // Check if the seller is the owner of the store
+      const { data: store } = await supabase
+        .from('stores')
+        .select('owner_id')
+        .eq('id', data.storeId)
+        .single();
+
+      const isConsignment = store ? store.owner_id !== sellerId : true;
+
       // Call Edge Function to create item
       const response = await fetch(EDGE_FUNCTIONS.ITEMS, {
         method: 'POST',
@@ -98,8 +108,8 @@ export const itemService = {
           images: imageUrls,
           store_id: data.storeId,
           seller_id: sellerId,
-          is_consignment: true,
-          hanger_fee: 2.0,
+          is_consignment: isConsignment,
+          hanger_fee: isConsignment ? 2.0 : 0.0,
         }),
       });
 
