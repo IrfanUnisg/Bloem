@@ -30,7 +30,6 @@ import StoreInventory from "./pages/store/StoreInventory";
 import StoreDropoffs from "./pages/store/StoreDropoffs";
 import StoreAnalytics from "./pages/store/StoreAnalytics";
 import StoreCheckout from "./pages/store/StoreCheckout";
-import StoreMarketing from "./pages/store/StoreMarketing";
 import AdminStores from "./pages/admin/AdminStores";
 import AdminSupport from "./pages/admin/AdminSupport";
 import AdminAnalytics from "./pages/admin/AdminAnalytics";
@@ -78,7 +77,6 @@ const App = () => (
                 <Route path="/store/dropoffs" element={<RoleBasedRoute allowedRoles={["store"]}><StoreDropoffs /></RoleBasedRoute>} />
                 <Route path="/store/analytics" element={<RoleBasedRoute allowedRoles={["store"]}><StoreAnalytics /></RoleBasedRoute>} />
                 <Route path="/store/checkout" element={<RoleBasedRoute allowedRoles={["store"]}><StoreCheckout /></RoleBasedRoute>} />
-                <Route path="/store/marketing" element={<RoleBasedRoute allowedRoles={["store"]}><StoreMarketing /></RoleBasedRoute>} />
                 
                 {/* Admin routes - require admin role */}
                 <Route path="/admin/stores" element={<RoleBasedRoute allowedRoles={["admin"]}><AdminStores /></RoleBasedRoute>} />

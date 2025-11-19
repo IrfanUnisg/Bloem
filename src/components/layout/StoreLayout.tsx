@@ -1,7 +1,7 @@
 import { ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Header } from "./Header";
-import { Package, Inbox, BarChart3, Megaphone, CreditCard } from "lucide-react";
+import { Package, Inbox, BarChart3, CreditCard } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface StoreLayoutProps {
@@ -16,7 +16,6 @@ export function StoreLayout({ children }: StoreLayoutProps) {
     { icon: Inbox, label: "drop-offs", href: "/store/dropoffs" },
     { icon: CreditCard, label: "checkout", href: "/store/checkout" },
     { icon: BarChart3, label: "analytics", href: "/store/analytics" },
-    { icon: Megaphone, label: "marketing", href: "/store/marketing" },
   ];
 
   return (
@@ -56,7 +55,7 @@ export function StoreLayout({ children }: StoreLayoutProps) {
 
       {/* Bottom Navigation - Mobile */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t z-40">
-        <div className="grid grid-cols-5 gap-1 p-2">
+        <div className="grid grid-cols-4 gap-1 p-2">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.href;
