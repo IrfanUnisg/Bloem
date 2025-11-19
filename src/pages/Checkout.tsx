@@ -16,7 +16,7 @@ import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
 // Payment Form Component
-function PaymentForm({ orderId, total, onSuccess }: { orderId: string; total: number; onSuccess: () => void }) {
+function PaymentForm({ orderId, total, onSuccess }: { orderId: string; total: number; onSuccess: (paymentIntentId: string) => void }) {
   const stripe = useStripe();
   const elements = useElements();
   const { toast } = useToast();
@@ -32,7 +32,7 @@ function PaymentForm({ orderId, total, onSuccess }: { orderId: string; total: nu
     setIsProcessing(true);
 
     try {
-      const { error } = await stripe.confirmPayment({
+      const { error, paymentIntent } = await stripe.confirmPayment({
         elements,
         confirmParams: {
           return_url: `${window.location.origin}/order-confirmation?orderId=${orderId}`,
@@ -46,9 +46,9 @@ function PaymentForm({ orderId, total, onSuccess }: { orderId: string; total: nu
           description: error.message || "An error occurred during payment.",
           variant: "destructive",
         });
-      } else {
-        // Payment successful
-        onSuccess();
+      } else if (paymentIntent) {
+        // Payment successful, pass payment intent ID to parent
+        onSuccess(paymentIntent.id);
       }
     } catch (error: any) {
       toast({
@@ -254,7 +254,7 @@ const Checkout = () => {
     initializeCheckout();
   }, []); // Run only once on mount
 
-  const handlePaymentSuccess = async () => {
+  const handlePaymentSuccess = async (paymentIntentId: string) => {
     toast({
       title: "Payment successful!",
       description: "Your order has been confirmed.",
@@ -268,8 +268,8 @@ const Checkout = () => {
       console.warn('Cart refresh failed after payment, but continuing:', error);
     }
 
-    // Navigate to order confirmation
-    navigate(`/order-confirmation?orderId=${orderId}`);
+    // Navigate to order confirmation with payment_intent to trigger confirm-payment edge function
+    navigate(`/order-confirmation?orderId=${orderId}&payment_intent=${paymentIntentId}`);
   };
 
   const subtotal = items.reduce((sum, cartItem) => sum + (cartItem.item?.price || 0), 0);
