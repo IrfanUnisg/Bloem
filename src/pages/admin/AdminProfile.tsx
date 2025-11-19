@@ -5,17 +5,25 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { User, Mail, Phone, Shield, LogOut, Activity } from "lucide-react";
-import { useState } from "react";
+import { User, Mail, Phone, Shield, LogOut, Activity, Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/lib/supabase";
 import { ChangePasswordDialog } from "@/components/ChangePasswordDialog";
 
 const AdminProfile = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const { logout, user } = useAuth();
+  const [loadingStats, setLoadingStats] = useState(true);
+  const [stats, setStats] = useState({
+    totalTransactions: 0,
+    totalSalesAmount: 0,
+    storesApproved: 0,
+    platformUsers: 0,
+  });
   const [formData, setFormData] = useState({
     name: user?.name || "admin user",
     email: user?.email || "admin@bloem.app",
@@ -23,6 +31,55 @@ const AdminProfile = () => {
     role: "super admin",
     department: "platform operations",
   });
+
+  useEffect(() => {
+    fetchAdminStats();
+  }, []);
+
+  const fetchAdminStats = async () => {
+    setLoadingStats(true);
+    try {
+      // Get total number of transactions
+      const { count: totalTransactions } = await supabase
+        .from('transactions')
+        .select('*', { count: 'exact', head: true });
+
+      // Get total sales amount (sum of all item prices from sold items)
+      const { data: soldItems } = await supabase
+        .from('items')
+        .select('price')
+        .eq('status', 'SOLD');
+
+      const totalSalesAmount = soldItems?.reduce((sum, item) => sum + (item.price || 0), 0) || 0;
+
+      // Get number of approved stores
+      const { count: storesApproved } = await supabase
+        .from('stores')
+        .select('*', { count: 'exact', head: true })
+        .eq('verified', true);
+
+      // Get total platform users
+      const { count: platformUsers } = await supabase
+        .from('users')
+        .select('*', { count: 'exact', head: true });
+
+      setStats({
+        totalTransactions: totalTransactions || 0,
+        totalSalesAmount,
+        storesApproved: storesApproved || 0,
+        platformUsers: platformUsers || 0,
+      });
+    } catch (error) {
+      console.error('Error fetching admin stats:', error);
+      toast({
+        title: "Error loading statistics",
+        description: "Failed to load platform statistics.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingStats(false);
+    }
+  };
 
   const handleSave = () => {
     toast({
@@ -237,20 +294,38 @@ const AdminProfile = () => {
           {/* Admin Stats */}
           <Card className="p-6">
             <h3 className="text-xl font-semibold text-foreground mb-6">
-              admin statistics
+              platform analytics
             </h3>
-            <div className="grid grid-cols-3 gap-6 text-center">
-              <div>
-                <div className="text-3xl font-bold text-primary">47</div>
-                <p className="text-sm text-muted-foreground">stores approved</p>
+            {loadingStats ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
-              <div>
-                <div className="text-3xl font-bold text-primary">132</div>
-                <p className="text-sm text-muted-foreground">tickets resolved</p>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-primary">{stats.totalTransactions}</div>
+                  <p className="text-sm text-muted-foreground">transactions</p>
+                </div>
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-primary">€{stats.totalSalesAmount.toFixed(2)}</div>
+                  <p className="text-sm text-muted-foreground">sales amount</p>
+                </div>
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-primary">{stats.storesApproved}</div>
+                  <p className="text-sm text-muted-foreground">stores approved</p>
+                </div>
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-primary">{stats.platformUsers}</div>
+                  <p className="text-sm text-muted-foreground">platform users</p>
+                </div>
               </div>
-              <div>
-                <div className="text-3xl font-bold text-primary">8.2k</div>
-                <p className="text-sm text-muted-foreground">platform users</p>
+            )}
+            
+            <div className="mt-6 pt-6 border-t">
+              <div className="text-center">
+                <p className="text-sm text-muted-foreground mb-2">platform revenue</p>
+                <Badge variant="outline" className="text-xs">coming soon</Badge>
+                <p className="text-xs text-muted-foreground mt-2">commission rates pending configuration</p>
               </div>
             </div>
           </Card>
