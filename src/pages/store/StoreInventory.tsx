@@ -96,7 +96,7 @@ const StoreInventory = () => {
               <QrCode className="mr-2 h-4 w-4" />
               Process Drop-offs
             </Button>
-            <Button onClick={() => toast({ title: "Coming soon", description: "Add store-owned items feature coming soon!" })}>
+            <Button onClick={() => navigate("/store/add-item")}>
               <Plus className="mr-2 h-4 w-4" />
               Add Store Item
             </Button>

@@ -28,6 +28,7 @@ import Profile from "./pages/Profile";
 import StoreProfile from "./pages/StoreProfile";
 import StoreInventory from "./pages/store/StoreInventory";
 import StoreDropoffs from "./pages/store/StoreDropoffs";
+import AddStoreItem from "./pages/store/AddStoreItem";
 import StoreAnalytics from "./pages/store/StoreAnalytics";
 import StoreCheckout from "./pages/store/StoreCheckout";
 import StoreMarketing from "./pages/store/StoreMarketing";
@@ -76,6 +77,7 @@ const App = () => (
                 <Route path="/store-profile" element={<RoleBasedRoute allowedRoles={["store"]}><StoreProfile /></RoleBasedRoute>} />
                 <Route path="/store/inventory" element={<RoleBasedRoute allowedRoles={["store"]}><StoreInventory /></RoleBasedRoute>} />
                 <Route path="/store/dropoffs" element={<RoleBasedRoute allowedRoles={["store"]}><StoreDropoffs /></RoleBasedRoute>} />
+                <Route path="/store/add-item" element={<RoleBasedRoute allowedRoles={["store"]}><AddStoreItem /></RoleBasedRoute>} />
                 <Route path="/store/analytics" element={<RoleBasedRoute allowedRoles={["store"]}><StoreAnalytics /></RoleBasedRoute>} />
                 <Route path="/store/checkout" element={<RoleBasedRoute allowedRoles={["store"]}><StoreCheckout /></RoleBasedRoute>} />
                 <Route path="/store/marketing" element={<RoleBasedRoute allowedRoles={["store"]}><StoreMarketing /></RoleBasedRoute>} />
