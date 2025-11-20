@@ -6,6 +6,7 @@
 import { Order, OrderWithItems, OrderStatus } from '@/types';
 import { supabase } from '@/lib/supabase';
 import { EDGE_FUNCTIONS } from '@/lib/edge-functions';
+import { mapOrderFields } from '@/lib/mappers';
 
 export const orderService = {
   /**
@@ -67,7 +68,8 @@ export const orderService = {
         .single();
 
       if (error) throw error;
-      return order as OrderWithItems;
+      // Map snake_case fields to camelCase
+      return mapOrderFields(order) as OrderWithItems;
     } catch (error) {
       console.error('Error fetching order:', error);
       return null;
