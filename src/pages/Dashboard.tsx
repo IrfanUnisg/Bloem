@@ -59,12 +59,6 @@ const Dashboard = () => {
     setIsLoadingOrders(true);
     try {
       const userOrders = await orderService.getOrdersBySeller(user.id);
-      console.log('=== DASHBOARD fetchUserOrders ===');
-      console.log('Total orders fetched:', userOrders.length);
-      if (userOrders.length > 0) {
-        console.log('First order:', userOrders[0]);
-        console.log('First order items:', userOrders[0].items);
-      }
       setOrders(userOrders);
     } catch (error) {
       console.error("Error fetching orders:", error);

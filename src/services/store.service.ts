@@ -269,11 +269,6 @@ export const storeService = {
         .eq('store_id', storeId)
         .eq('status', 'COMPLETED');
 
-      console.log('Store stats - all COMPLETED orders:', orders?.length || 0, ordersError);
-      if (orders && orders.length > 0) {
-        console.log('First order:', orders[0]);
-      }
-      
       // Filter by month client-side to handle null completed_at
       const ordersThisMonth = orders?.filter(order => {
         const completedDate = order.completed_at ? new Date(order.completed_at) : new Date(order.created_at);
@@ -293,17 +288,12 @@ export const storeService = {
       // Get order items for these orders
       const orderIds = ordersThisMonth.map(o => o.id);
       
-      console.log('Fetching order_items for order IDs:', orderIds);
-      
       const { data: orderItems, error: itemsError } = await supabase
         .from('order_items')
         .select('*')
         .in('order_id', orderIds);
       
-      console.log('Store stats - orderItems raw:', orderItems?.length || 0, itemsError);
-      
       if (!orderItems || orderItems.length === 0) {
-        console.log('No order items found for these orders');
         return {
           itemsSoldThisMonth: itemsSoldThisMonth || 0,
           monthlyRevenue: 0,
@@ -318,8 +308,6 @@ export const storeService = {
         .select('id, store_id, is_consignment')
         .in('id', itemIds);
       
-      console.log('Item details fetched:', items?.length || 0, itemsDetailsError);
-      
       // Create a map for quick lookup
       const itemsMap = new Map(items?.map((i: any) => [i.id, i]) || []);
       
@@ -328,11 +316,6 @@ export const storeService = {
         ...oi,
         item: itemsMap.get(oi.item_id)
       }));
-      
-      console.log('Store stats - orderItems total:', enrichedOrderItems.length);
-      if (enrichedOrderItems && enrichedOrderItems.length > 0) {
-        console.log('First order item:', enrichedOrderItems[0]);
-      }
 
       // Calculate total store revenue
       const monthlyRevenue = enrichedOrderItems?.reduce((sum, oi: any) => {

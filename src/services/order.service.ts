@@ -25,8 +25,6 @@ export const orderService = {
         throw new Error('Not authenticated - please sign in again');
       }
 
-      console.log('DEBUG createOrder: Has session, calling API');
-
       const response = await fetch(EDGE_FUNCTIONS.ORDERS, {
         method: 'POST',
         headers: {
@@ -158,8 +156,6 @@ export const orderService = {
         throw ordersError;
       }
 
-      console.log('Orders fetched:', orders?.length || 0);
-
       if (!orders || orders.length === 0) {
         return [];
       }
@@ -177,8 +173,6 @@ export const orderService = {
         console.error('Error fetching order_items:', itemsError);
       }
 
-      console.log('Order items fetched:', orderItems?.length || 0);
-
       if (!orderItems || orderItems.length === 0) {
         return [];
       }
@@ -195,8 +189,6 @@ export const orderService = {
       if (itemsDetailError) {
         console.error('Error fetching items:', itemsDetailError);
       }
-
-      console.log('Items fetched:', items?.length || 0);
 
       // Create a map of items by ID
       const itemsMap = new Map(items?.map((i: any) => [i.id, i]) || []);
@@ -222,21 +214,14 @@ export const orderService = {
         items: itemsByOrder.get(order.id) || []
       }));
 
-      console.log('Orders with items combined:', ordersWithItems.length);
-
       // Filter to only include orders with items sold by this seller
       const filteredOrders = ordersWithItems.filter(order => {
         const hasSellerItems = order.items?.some((oi: any) => {
           const matches = oi.item?.seller_id === sellerId;
-          if (matches) {
-            console.log('Found seller item:', oi.item?.title, 'payout:', oi.seller_payout);
-          }
           return matches;
         });
         return hasSellerItems;
       });
-
-      console.log('Orders with seller items:', filteredOrders.length);
 
       return filteredOrders as OrderWithItems[];
     } catch (error) {

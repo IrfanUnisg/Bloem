@@ -69,9 +69,6 @@ const Browse = () => {
         offset: 0
       };
 
-      console.log('🔍 Browse: Fetching items with filters:', filters);
-      console.log('👤 Current user:', user?.id, user?.email);
-
       if (selectedCategories.length > 0) {
         // Fetch for each category and combine
         const categoryPromises = selectedCategories.map(cat => 
@@ -91,7 +88,6 @@ const Browse = () => {
         if (priceRange[1] < 100) filters.maxPrice = priceRange[1];
 
         const fetchedItems = await itemService.browseItems(filters);
-        console.log('📦 Browse: Received items from API:', fetchedItems.length, fetchedItems);
         
         // Apply client-side filters for size and condition
         let filtered = fetchedItems;
@@ -100,13 +96,10 @@ const Browse = () => {
         filtered = filtered.filter(item => 
           item.status === 'FOR_SALE'
         );
-        console.log('✅ Browse: After FOR_SALE filter:', filtered.length);
         
         // Filter out user's own items
         if (user) {
-          console.log('🚫 Browse: Filtering out items from seller:', user.id);
           filtered = filtered.filter(item => (item as any).seller_id !== user.id);
-          console.log('👥 Browse: After seller filter:', filtered.length);
         }
         
         if (selectedSizes.length > 0) {
@@ -117,11 +110,10 @@ const Browse = () => {
           filtered = filtered.filter(item => selectedConditions.includes(item.condition));
         }
 
-        console.log('🎯 Browse: Final items to display:', filtered.length, filtered);
         setItems(filtered);
       }
     } catch (error: any) {
-      console.error('❌ Browse: Error fetching items:', error);
+      console.error('Error fetching items:', error);
       toast({
         title: "Error loading items",
         description: error.message || "Failed to load items. Please try again.",

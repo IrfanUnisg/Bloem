@@ -149,10 +149,9 @@ const Checkout = () => {
 
       // If we have an existing order, skip cart validation
       if (existingOrderId) {
-        console.log('DEBUG: Using existing order:', existingOrderId);
+        // Using existing order
       } else {
         // Check cart BEFORE refreshing to avoid race condition
-        console.log('DEBUG: Current cart items:', items.length);
         
         if (items.length === 0) {
           // Try refreshing once to see if items exist
@@ -160,7 +159,6 @@ const Checkout = () => {
           
           // If still empty after refresh, redirect to cart
           if (items.length === 0) {
-            console.error('CHECKOUT ERROR: Cart is empty after refresh');
             toast({
               title: "Cart is empty",
               description: "Please add items to your cart before checking out.",
@@ -170,8 +168,6 @@ const Checkout = () => {
             return;
           }
         }
-        
-        console.log('DEBUG: Proceeding with checkout, cart has', items.length, 'items');
       }
 
       setIsCreatingPayment(true);
@@ -186,8 +182,6 @@ const Checkout = () => {
             throw new Error('No items in cart');
           }
 
-          console.log('DEBUG: Cart items:', JSON.stringify(items, null, 2));
-          
           // Use item_id (snake_case) from database, not itemId
           const itemIds = items.map(cartItem => {
             const id = (cartItem as any).item_id || cartItem.itemId || cartItem.item?.id;
@@ -209,12 +203,8 @@ const Checkout = () => {
           } else if ((firstItem as any)?.store_id) {
             storeId = (firstItem as any).store_id;
           } else if ((firstCartItem as any)?.store_id) {
-            storeId = (firstCartItem as any).store_id;
+            storeId = (firstCartItem as any)?.store_id;
           }
-          
-          console.log('DEBUG: Extracted data - itemIds:', itemIds, 'storeId:', storeId);
-          console.log('DEBUG: First cart item:', firstCartItem);
-          console.log('DEBUG: First item:', firstItem);
           
           if (!storeId) {
             console.error('Failed to extract store ID from cart items');
@@ -222,7 +212,6 @@ const Checkout = () => {
           }
           
           const order = await orderService.createOrder(user.id, itemIds, storeId);
-          console.log('DEBUG: Order created successfully:', order.id);
           currentOrderId = order.id;
         }
 
