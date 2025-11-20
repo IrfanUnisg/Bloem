@@ -17,19 +17,15 @@ export function StoreCard({
 }: StoreCardProps) {
   return <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
       {/* Image (only if provided) */}
-      {image && (
-        <div className="relative aspect-[3/2] bg-muted overflow-hidden">
-          <img
-            src={image}
-            alt={name}
-            className="w-full h-full object-cover"
-            onError={e => {
-              // Hide image if it fails to load
-              e.currentTarget.style.display = 'none';
-            }}
-          />
-        </div>
-      )}
+      <div className="relative aspect-[3/2] bg-muted overflow-hidden">
+        {image ? (
+          <img src={image} alt={name} className="w-full h-full object-cover" />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+            Store Image
+          </div>
+        )}
+      </div>
 
       {/* Content */}
       <div className="p-4">
