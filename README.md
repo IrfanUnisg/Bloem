@@ -1,8 +1,9 @@
 # Bloem - The Online Thrift Shop
 
-A modern, production-ready e-commerce platform for buying and selling thrifted items. Built with React, TypeScript, Supabase, Stripe, and Tailwind CSS.
+A modern, production-ready e-commerce platform for buying and selling thrifted items. Built with React 18, TypeScript, Vite, Supabase, Stripe, and Tailwind CSS.
 
 **Author:** @IrfanUnisg  
+**Repository:** [github.com/IrfanUnisg/Bloem](https://github.com/IrfanUnisg/Bloem)  
 **Status:** Production-Ready (Cleaned & Verified - November 2025)
 
 ---
@@ -42,61 +43,75 @@ The platform supports two user roles:
 ## Tech Stack
 
 ### Frontend
-- **React 18** - UI framework
-- **TypeScript** - Type-safe development
-- **Vite** - Fast build tool and dev server
-- **Tailwind CSS** - Utility-first styling
-- **shadcn/ui** - Accessible UI components
-- **React Router** - Client-side routing
-- **React Hook Form** - Form state management
+- **React 18** - Modern UI framework with hooks
+- **TypeScript** - Type-safe development with strict checking
+- **Vite** - Next-generation build tool with lightning-fast dev server
+- **Tailwind CSS** - Utility-first CSS framework for styling
+- **shadcn/ui** - High-quality, accessible UI components built on Radix UI
+- **React Router v6** - Client-side routing and navigation
+- **React Hook Form** - Efficient form state management with validation (Zod)
+- **Recharts** - Data visualization for seller analytics
+- **Lucide React** - Beautiful, consistent icon set
+- **Embla Carousel** - Image gallery and carousel component
+- **Sonner** - Toast notifications and alerts
 
 ### Backend & Infrastructure
-- **Supabase** - PostgreSQL database, authentication, and real-time APIs
-- **Prisma** - ORM for type-safe database queries
-- **Stripe** - Payment processing
-- **Vercel** - Hosting and edge functions
+- **Supabase** - PostgreSQL database, authentication (Supabase Auth), real-time APIs, and file storage
+- **Prisma** - Type-safe ORM for database queries
+- **Stripe** - Payment processing, webhooks, and subscription management
+- **Vercel** - Hosting, edge functions, and serverless deployment
+- **Radix UI** - Headless component library for accessible UI
 
 ### Development Tools
-- **ESLint** - Code quality and consistency
-- **TypeScript** - Static type checking
-- **Vite** - Build optimization with automatic code splitting
+- **ESLint** - Code quality and consistency checking
+- **TypeScript** - Static type checking and compile-time error detection
+- **Vite** - Build optimization with automatic code splitting and hot module replacement
+- **PostCSS** - CSS processing pipeline
+- **Autoprefixer** - Automatic CSS vendor prefixing
+- **Tailwind CSS Typography** - Prose class support for rich text
 
 ---
 
 ## Features
 
-### Core Marketplace
-- ✅ Browse items by category and filters (size, condition, price)
-- ✅ Item detail pages with image galleries and QR codes
-- ✅ Shopping cart with real-time sync
-- ✅ Secure checkout with Stripe integration
-- ✅ Order confirmation and tracking
+### Core Marketplace Features
+- ✅ **Browse Items** - Filter by category, size, condition, price, and search
+- ✅ **Item Detail Pages** - Image galleries, QR codes, seller information, reviews
+- ✅ **Shopping Cart** - Real-time cart sync across devices
+- ✅ **Secure Checkout** - Stripe payment processing with multiple payment methods
+- ✅ **Order Confirmation** - Automatic confirmations and tracking emails
+- ✅ **Order History** - Full purchase history with status tracking
 
-### Seller Dashboard
-- ✅ List new items with photos and descriptions
-- ✅ Inventory management with status tracking (FOR_SALE, RESERVED, SOLD, REMOVED)
-- ✅ Order management and fulfillment
-- ✅ Sales analytics and revenue tracking
-- ✅ Store profile and settings
+### Seller/Inventory Management
+- ✅ **Item Upload** - List items with photos, descriptions, pricing, and inventory status
+- ✅ **Inventory Tracking** - Real-time status: FOR_SALE, RESERVED, SOLD, REMOVED
+- ✅ **Sales Dashboard** - View sales, earnings, and inventory at a glance
+- ✅ **Order Fulfillment** - Manage buyer orders and shipping
+- ✅ **Sales Analytics** - Revenue tracking and performance metrics (charts powered by Recharts)
+- ✅ **Store Profile** - Customizable seller profile and settings
 
-### Store Management
-- ✅ Multi-item store ownership
-- ✅ Store approval workflow for admins
-- ✅ Dropoff point management
-- ✅ Store-level inventory and order tracking
-- ✅ Monthly sales statistics
+### Store Management (Multi-Store Support)
+- ✅ **Store Creation** - Business users can create and manage thrift stores
+- ✅ **Store Approval Workflow** - Admin approval system for store applications
+- ✅ **Store Browsing** - Directory of all active stores
+- ✅ **Store Profile Pages** - Public store information and inventory
+- ✅ **Store Analytics** - Monthly sales statistics and performance tracking
+- ✅ **Store Settings** - Dropoff point management and configuration
 
 ### User Features
-- ✅ User authentication with Supabase
-- ✅ Profile management with avatar uploads
-- ✅ Wishlist functionality
-- ✅ Order history for buyers and sellers
-- ✅ Contact form for inquiries
+- ✅ **Authentication** - Secure Supabase Auth with email/password and OAuth options
+- ✅ **User Profiles** - Profile customization with avatar uploads
+- ✅ **Wishlist** - Save favorite items for later
+- ✅ **Order History** - Track all past purchases
+- ✅ **Contact Form** - Customer inquiries and feedback
+- ✅ **Responsive Design** - Mobile-optimized experience
 
 ### Admin Features
-- ✅ Store application approval/rejection
-- ✅ Platform statistics and monitoring
-- ✅ User and store management
+- ✅ **Store Application Management** - Approve or reject store applications
+- ✅ **Platform Analytics** - System-wide statistics and monitoring
+- ✅ **User Management** - View and manage platform users
+- ✅ **Store Management** - Manage all active stores
+- ✅ **Admin Dashboard** - Centralized admin control panel
 
 ---
 
@@ -160,41 +175,73 @@ npm run prisma:studio
 ```
 Bloem/
 ├── src/
-│   ├── components/          # React components
+│   ├── components/          # Reusable React components
 │   │   ├── cards/          # Card-based UI components
-│   │   ├── layout/         # Layout components (navbar, sidebar, etc)
-│   │   ├── ui/             # shadcn UI components
-│   │   ├── placeholders/   # Empty states and placeholders
-│   │   └── MobileFilterDrawer.tsx, ResponsiveImage.tsx
+│   │   ├── layout/         # Layout components (navbar, sidebar, footer)
+│   │   ├── ui/             # shadcn/ui components
+│   │   ├── placeholders/   # Empty states and placeholder components
+│   │   ├── MobileFilterDrawer.tsx
+│   │   └── ResponsiveImage.tsx
 │   ├── pages/              # Page components (routed)
-│   ├── contexts/           # React Context providers (Auth, Cart)
+│   │   ├── About.tsx
+│   │   ├── Browse.tsx          # Item browsing and filtering
+│   │   ├── BrowseStores.tsx    # Store directory
+│   │   ├── Cart.tsx
+│   │   ├── Checkout.tsx
+│   │   ├── Contact.tsx
+│   │   ├── Dashboard.tsx       # Buyer/Seller dashboard
+│   │   ├── FAQ.tsx
+│   │   ├── ItemDetail.tsx
+│   │   ├── OrderConfirmation.tsx
+│   │   ├── Orders.tsx
+│   │   ├── Profile.tsx
+│   │   ├── SignIn.tsx
+│   │   ├── SignUp.tsx
+│   │   ├── StoreProfile.tsx
+│   │   ├── Terms.tsx
+│   │   ├── Upload.tsx          # Item listing form
+│   │   ├── Wishlist.tsx
+│   │   ├── admin/          # Admin pages
+│   │   └── store/          # Store management pages
+│   ├── contexts/           # React Context providers (Auth, Cart, etc.)
 │   ├── hooks/              # Custom React hooks
-│   ├── services/           # API service layers
+│   ├── services/           # API service layers and data fetching
+│   │   ├── admin.service.ts
 │   │   ├── auth.service.ts
+│   │   ├── cart.service.ts
+│   │   ├── contact.service.ts
 │   │   ├── item.service.ts
 │   │   ├── order.service.ts
-│   │   ├── cart.service.ts
 │   │   ├── store.service.ts
-│   │   └── ...
-│   ├── lib/                # Utilities and helpers
+│   │   ├── user.service.ts
+│   │   ├── user-profile.service.ts
+│   │   └── wishlist.service.ts
+│   ├── lib/                # Utility functions and helpers
 │   ├── types/              # TypeScript type definitions
 │   ├── assets/             # Images and static assets
 │   ├── App.tsx             # Root component
-│   └── main.tsx            # Entry point
-├── prisma/                 # Database schema and migrations
-│   └── schema.prisma       # Prisma ORM schema
-├── supabase/               # Supabase edge functions
-│   ├── functions/          # Serverless functions
+│   ├── App.css
+│   ├── index.css
+│   ├── main.tsx            # Entry point
+│   └── vite-env.d.ts       # Vite environment types
+├── prisma/
+│   ├── schema.prisma       # Prisma ORM database schema
+│   └── init.sql            # Database initialization
+├── supabase/               # Supabase configuration
+│   ├── functions/          # Edge functions
 │   └── migrations/         # Database migrations
 ├── scripts/                # Development and deployment scripts
-│   ├── auto-deploy.ps1     # Automatic Vercel deployment (dev-only)
-│   ├── create-admin.ts     # Create admin user (dev-only)
-│   └── README.md
-├── public/                 # Static files
-├── vite.config.ts          # Vite configuration
+├── public/                 # Static files (robots.txt, favicons, etc.)
+├── components.json         # shadcn/ui configuration
+├── vite.config.ts          # Vite build configuration
 ├── tsconfig.json           # TypeScript configuration
+├── tsconfig.app.json       # TypeScript app configuration
+├── tsconfig.node.json      # TypeScript Node configuration
 ├── tailwind.config.ts      # Tailwind CSS configuration
-├── package.json            # Project dependencies
+├── postcss.config.js       # PostCSS configuration
+├── eslint.config.js        # ESLint configuration
+├── package.json            # Project dependencies and scripts
+├── vercel.json             # Vercel deployment configuration
 └── README.md               # This file
 ```
 
@@ -234,21 +281,22 @@ VITE_STRIPE_PUBLISHABLE_KEY="pk_live_..."
 
 ```bash
 # Development
-npm run dev              # Start dev server with hot reload
-
-# Building
-npm run build            # Production build
-npm run build:dev        # Development build (unminified, for debugging)
-npm run preview          # Preview production build locally
+npm run dev              # Start Vite dev server with hot reload (port 5173)
+npm run build            # Production build (optimized and minified)
+npm run build:dev        # Development build (unminified for debugging)
+npm run preview          # Preview production build locally (port 4173)
 
 # Code Quality
-npm run lint             # Run ESLint
+npm run lint             # Run ESLint to check code quality
 
-# Database
-npm run prisma:generate  # Generate Prisma client
-npm run prisma:migrate   # Run database migrations
-npm run prisma:studio    # Open Prisma Studio for DB inspection
-npm run prisma:reset     # Reset database (development only)
+# Database (Prisma)
+npm run prisma:generate  # Generate Prisma client from schema
+npm run prisma:migrate   # Create and run database migrations
+npm run prisma:studio    # Open Prisma Studio for visual database management
+npm run prisma:reset     # Reset database (development only - DESTRUCTIVE)
+
+# Post-install
+postinstall hook automatically runs `prisma generate`
 ```
 
 ### Code Style
@@ -420,5 +468,6 @@ For issues or questions:
 
 ---
 
-**Last Updated:** November 17, 2025  
-**Production Ready:** Yes
+**Last Updated:** November 20, 2025  
+**Production Ready:** Yes  
+**Build Status:** ✅ All systems operational
