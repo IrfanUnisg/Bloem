@@ -41,7 +41,24 @@ function mapOrderFields(order: any): any {
       storeCommission: oi.store_commission ?? oi.storeCommission,
       platformFee: oi.platform_fee ?? oi.platformFee,
       createdAt: oi.created_at || oi.createdAt,
+      // Map nested item fields
+      item: oi.item ? {
+        ...oi.item,
+        qrCode: oi.item.qr_code || oi.item.qrCode,
+        isConsignment: oi.item.is_consignment ?? oi.item.isConsignment,
+        hangerFee: oi.item.hanger_fee ?? oi.item.hangerFee,
+        sellerId: oi.item.seller_id || oi.item.sellerId,
+        storeId: oi.item.store_id || oi.item.storeId,
+        uploadedAt: oi.item.uploaded_at || oi.item.uploadedAt,
+        listedAt: oi.item.listed_at || oi.item.listedAt,
+        soldAt: oi.item.sold_at || oi.item.soldAt,
+        createdAt: oi.item.created_at || oi.item.createdAt,
+        updatedAt: oi.item.updated_at || oi.item.updatedAt,
+      } : oi.item,
     })) || order.items,
+    // Map nested buyer and store (keep as-is, they're already mapped by Supabase)
+    buyer: order.buyer,
+    store: order.store,
   }
 }
 
@@ -51,7 +68,8 @@ serve(async (req) => {
   }
 
   try {
-    // Create client with service role for item updates
+    // Create client with service role for all order operations
+    // This ensures we can fetch items even when they're SOLD (not just FOR_SALE)
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
@@ -178,7 +196,7 @@ serve(async (req) => {
         return acc
       }, {})
 
-      const platformFeeRate = 0.05
+      const platformFeeRate = 0.03 // 3% platform fee (combined with 7% store commission = 10% total)
       const createdOrders = []
 
       // Create separate orders for each store
@@ -187,13 +205,19 @@ serve(async (req) => {
         
         // Calculate pricing for this store's items
         const subtotal = storeItemsArray.reduce((sum: number, item: any) => sum + item.price, 0)
-        const serviceFee = 0
+        
+        // Service fee (10% only on consignment items, deducted from seller payout, shown for transparency)
+        const consignmentSubtotal = storeItemsArray
+          .filter((item: any) => item.is_consignment)
+          .reduce((sum: number, item: any) => sum + item.price, 0)
+        const serviceFee = consignmentSubtotal * 0.10
         const tax = 0
-        const total = subtotal + serviceFee + tax
+        // Buyers pay only the item price; fee is deducted from seller's payout
+        const total = subtotal
 
         // Get store commission rate
         const store = storeItemsArray[0].store
-        const commissionRate = store.commissionRate || 0.20
+        const commissionRate = store.commissionRate || 0.07
 
         // Create order with PENDING status (awaiting payment)
         const { data: order, error: orderError } = await supabaseClient

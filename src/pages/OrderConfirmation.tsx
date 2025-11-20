@@ -25,15 +25,14 @@ const OrderConfirmation = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isConfirming, setIsConfirming] = useState(false);
 
-  const orderId = searchParams.get("orderId");
   const paymentIntentId = searchParams.get("payment_intent");
 
   useEffect(() => {
     const confirmPaymentAndLoadOrder = async () => {
-      if (!orderId && !paymentIntentId) {
+      if (!paymentIntentId) {
         toast({
-          title: "No order found",
-          description: "Unable to find order details.",
+          title: "No payment information",
+          description: "Unable to find payment details.",
           variant: "destructive",
         });
         navigate("/dashboard");
@@ -43,64 +42,47 @@ const OrderConfirmation = () => {
       setIsLoading(true);
 
       try {
-        // If we have payment intent, confirm the payment first
-        if (paymentIntentId) {
-          setIsConfirming(true);
-          const { data: { session } } = await supabase.auth.getSession();
+        // Confirm the payment and create the order
+        setIsConfirming(true);
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session) {
+          throw new Error('Not authenticated. Please sign in again.');
+        }
+
+        const response = await fetch(EDGE_FUNCTIONS.CONFIRM_PAYMENT, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({ paymentIntentId }),
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          console.error('Payment confirmation error:', error);
           
-          if (!session) {
-            throw new Error('Not authenticated. Please sign in again.');
-          }
-
-          const response = await fetch(EDGE_FUNCTIONS.CONFIRM_PAYMENT, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${session.access_token}`,
-            },
-            body: JSON.stringify({ paymentIntentId, orderId }),
-          });
-
-          if (!response.ok) {
-            const error = await response.json();
-            console.error('Payment confirmation error:', error);
-            
-            // Provide more specific error messages
-            if (response.status === 400) {
-              throw new Error(error.error || 'Payment verification failed. Your payment may have been processed, but order completion failed. Please check your orders or contact support.');
-            } else if (response.status === 404) {
-              throw new Error('Order not found. Please check your orders page or contact support.');
-            } else {
-              throw new Error(error.error || 'Failed to confirm payment. Please contact support with your order details.');
-            }
-          }
-
-          const { order: confirmedOrder } = await response.json();
-          setOrder(confirmedOrder);
-          
-          // Refresh cart to sync with database after payment confirmation
-          try {
-            await refreshCart();
-          } catch (cartError) {
-            console.warn('Cart refresh failed, but order was completed successfully:', cartError);
-            // Don't throw - the order is complete, cart refresh is non-critical
-          }
-        } else if (orderId) {
-          // Just load the order
-          const loadedOrder = await orderService.getOrderById(orderId);
-          if (loadedOrder) {
-            setOrder(loadedOrder);
-            
-            // Refresh cart to ensure it's in sync
-            try {
-              await refreshCart();
-            } catch (cartError) {
-              console.warn('Cart refresh failed:', cartError);
-              // Don't throw - order display is more important
-            }
+          // Provide more specific error messages
+          if (response.status === 400) {
+            throw new Error(error.error || 'Payment verification failed. Your payment may have been processed, but order completion failed. Please check your orders or contact support.');
+          } else if (response.status === 404) {
+            throw new Error('Payment not found. Please check your orders page or contact support.');
           } else {
-            throw new Error('Order not found. Please check your orders page.');
+            throw new Error(error.error || 'Failed to confirm payment. Please contact support with your payment details.');
           }
+        }
+
+        const { order: confirmedOrder } = await response.json();
+        console.log('Confirmed order data:', confirmedOrder);
+        setOrder(confirmedOrder);
+        
+        // Refresh cart to sync with database after payment confirmation
+        try {
+          await refreshCart();
+        } catch (cartError) {
+          console.warn('Cart refresh failed, but order was completed successfully:', cartError);
+          // Don't throw - the order is complete, cart refresh is non-critical
         }
       } catch (error: any) {
         console.error("Error loading order:", error);
@@ -122,7 +104,7 @@ const OrderConfirmation = () => {
     };
 
     confirmPaymentAndLoadOrder();
-  }, [orderId, paymentIntentId, navigate, toast]);
+  }, [paymentIntentId, navigate, toast]);
 
   if (isLoading || isConfirming) {
     return (
@@ -167,7 +149,7 @@ const OrderConfirmation = () => {
           </div>
           <h1 className="text-3xl font-bold text-foreground mb-2">Payment Successful!</h1>
           <p className="text-muted-foreground">
-            Order #{order.orderNumber || order.id.slice(0, 8)} has been confirmed
+            Order #{(order.orderNumber || order.id.slice(0, 8)).toUpperCase()} has been confirmed
           </p>
         </div>
 
@@ -202,9 +184,16 @@ const OrderConfirmation = () => {
               <MapPin className="h-5 w-5 text-muted-foreground mt-0.5" />
               <div>
                 <p className="text-sm font-medium text-foreground">Pickup Location</p>
-                <p className="text-sm text-muted-foreground">{order.store?.name || 'Store information unavailable'}</p>
-                {order.store?.address && (
-                  <p className="text-xs text-muted-foreground">{order.store.address}</p>
+                {order.store ? (
+                  <>
+                    <p className="text-sm text-muted-foreground">{order.store.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {order.store.address}
+                      {order.store.city && `, ${order.store.city}`}
+                    </p>
+                  </>
+                ) : (
+                  <p className="text-sm text-muted-foreground">Store information unavailable</p>
                 )}
               </div>
             </div>
@@ -249,11 +238,11 @@ const OrderConfirmation = () => {
           {/* Total */}
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Subtotal</span>
-              <span className="font-medium text-foreground">€{order.subtotal?.toFixed(2)}</span>
+              <span className="text-muted-foreground">Payout to Seller</span>
+              <span className="font-medium text-foreground">€{((order.subtotal || 0) - (order.serviceFee || 0)).toFixed(2)}</span>
             </div>
             <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Service Fee</span>
+              <span className="text-muted-foreground">Fee</span>
               <span className="font-medium text-foreground">€{order.serviceFee?.toFixed(2)}</span>
             </div>
             <Separator className="my-3" />
@@ -282,7 +271,7 @@ const OrderConfirmation = () => {
             </div>
             <div className="flex items-start gap-2">
               <CheckCircle className="h-4 w-4 text-accent mt-0.5" />
-              <p>Bring your order number: <strong>#{order.orderNumber}</strong></p>
+              <p>Bring your order number: <strong>#{(order.orderNumber || order.id.slice(0, 8)).toUpperCase()}</strong></p>
             </div>
           </div>
         </Card>

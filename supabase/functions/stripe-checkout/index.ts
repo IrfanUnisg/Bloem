@@ -30,97 +30,52 @@ serve(async (req) => {
       }
     )
 
-    const { orderId } = await req.json()
+    const { itemIds, userId } = await req.json()
 
-    if (!orderId) {
-      throw new Error('Order ID required')
+    if (!itemIds || !Array.isArray(itemIds) || itemIds.length === 0) {
+      throw new Error('Item IDs required')
     }
 
-    // Fetch order details
-    const { data: order, error } = await supabaseClient
-      .from('orders')
-      .select(`
-        *,
-        items:order_items(
-          *,
-          item:items(*)
-        ),
-        buyer:users!orders_buyer_id_fkey(*),
-        store:stores!orders_store_id_fkey(*)
-      `)
-      .eq('id', orderId)
-      .single()
-
-    if (error || !order) {
-      throw new Error('Order not found')
+    if (!userId) {
+      throw new Error('User ID required')
     }
 
-    // Verify all items are still available (FOR_SALE or already RESERVED for this order)
-    const itemIds = order.items.map((oi: any) => oi.item_id)
+    // Fetch items and verify they're available
     const { data: items, error: itemsError } = await supabaseClient
       .from('items')
-      .select('id, status')
+      .select('*, store:stores!items_store_id_fkey(*)')
       .in('id', itemIds)
 
-    if (itemsError) throw itemsError
+    if (itemsError || !items || items.length === 0) {
+      throw new Error('Items not found')
+    }
 
-    const unavailableItems = items?.filter((item: any) => 
-      item.status !== 'FOR_SALE' && item.status !== 'RESERVED'
-    ) || []
-
+    // Verify all items are FOR_SALE
+    const unavailableItems = items.filter((item: any) => item.status !== 'FOR_SALE')
     if (unavailableItems.length > 0) {
-      throw new Error('Some items are no longer available for purchase. Please return to your cart.')
+      throw new Error('Some items are no longer available')
     }
 
-    // Check if payment intent already exists
-    if (order.payment_intent_id) {
-      // Retrieve existing payment intent
-      const existingIntent = await stripe.paymentIntents.retrieve(order.payment_intent_id)
-      
-      if (existingIntent.status === 'succeeded') {
-        throw new Error('Order has already been paid')
-      }
+    // Calculate total
+    const total = items.reduce((sum: number, item: any) => sum + item.price, 0)
+    const storeId = items[0].store_id
 
-      // Reuse existing payment intent (payment still in progress)
-      return new Response(
-        JSON.stringify({
-          clientSecret: existingIntent.client_secret,
-          paymentIntentId: existingIntent.id,
-        }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 200,
-        }
-      )
-    }
-
-    // DO NOT reserve items here - they stay FOR_SALE until payment succeeds
-    // This prevents items from being locked if user abandons checkout
+    // Items stay FOR_SALE - no order created yet
 
     // Create Stripe Payment Intent
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(order.total * 100), // Convert to cents
+      amount: Math.round(total * 100), // Convert to cents
       currency: 'eur',
       metadata: {
-        orderId: order.id,
-        orderNumber: order.order_number,
-        storeId: order.store_id,
-        buyerId: order.buyer_id,
+        itemIds: JSON.stringify(itemIds),
+        storeId: storeId,
+        buyerId: userId,
       },
-      description: `Bloem Order ${order.order_number}`,
+      description: `Bloem Purchase - ${items.length} item(s)`,
       automatic_payment_methods: {
         enabled: true,
       },
     })
-
-    // Update order with payment intent ID
-    await supabaseClient
-      .from('orders')
-      .update({
-        payment_intent_id: paymentIntent.id,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', orderId)
 
     return new Response(
       JSON.stringify({

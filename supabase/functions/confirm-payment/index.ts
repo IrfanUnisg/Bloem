@@ -35,7 +35,24 @@ function mapOrderFields(order: any): any {
       storeCommission: oi.store_commission ?? oi.storeCommission,
       platformFee: oi.platform_fee ?? oi.platformFee,
       createdAt: oi.created_at || oi.createdAt,
+      // Map nested item fields
+      item: oi.item ? {
+        ...oi.item,
+        qrCode: oi.item.qr_code || oi.item.qrCode,
+        isConsignment: oi.item.is_consignment ?? oi.item.isConsignment,
+        hangerFee: oi.item.hanger_fee ?? oi.item.hangerFee,
+        sellerId: oi.item.seller_id || oi.item.sellerId,
+        storeId: oi.item.store_id || oi.item.storeId,
+        uploadedAt: oi.item.uploaded_at || oi.item.uploadedAt,
+        listedAt: oi.item.listed_at || oi.item.listedAt,
+        soldAt: oi.item.sold_at || oi.item.soldAt,
+        createdAt: oi.item.created_at || oi.item.createdAt,
+        updatedAt: oi.item.updated_at || oi.item.updatedAt,
+      } : oi.item,
     })) || order.items,
+    // Map nested buyer and store (keep as-is, they're already mapped by Supabase)
+    buyer: order.buyer,
+    store: order.store,
   }
 }
 
@@ -55,7 +72,7 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '', // Use service role for admin operations
     )
 
-    const { paymentIntentId, orderId } = await req.json()
+    const { paymentIntentId } = await req.json()
 
     if (!paymentIntentId) {
       throw new Error('Payment Intent ID required')
@@ -68,45 +85,68 @@ serve(async (req) => {
       throw new Error('Payment has not succeeded')
     }
 
-    // Get order
+    // Extract metadata
+    const itemIds = JSON.parse(paymentIntent.metadata.itemIds || '[]')
+    const buyerId = paymentIntent.metadata.buyerId
+    const storeId = paymentIntent.metadata.storeId
+
+    if (!itemIds.length || !buyerId || !storeId) {
+      throw new Error('Invalid payment metadata')
+    }
+
+    // Fetch items
+    const { data: items, error: itemsError } = await supabaseClient
+      .from('items')
+      .select('*, store:stores!items_store_id_fkey(*)')
+      .in('id', itemIds)
+
+    if (itemsError || !items || items.length === 0) {
+      throw new Error('Items not found')
+    }
+
+    // Calculate totals
+    const platformFeeRate = 0.03
+    const subtotal = items.reduce((sum, item) => sum + item.price, 0)
+    const consignmentSubtotal = items
+      .filter(item => item.is_consignment)
+      .reduce((sum, item) => sum + item.price, 0)
+    const serviceFee = consignmentSubtotal * 0.10
+    const total = subtotal
+
+    // Get store commission rate
+    const store = items[0].store
+    const commissionRate = store.commission_rate || 0.07
+
+    // Generate order number
+    const timestamp = Date.now().toString(36).toUpperCase()
+    const random = Math.random().toString(36).substring(2, 6).toUpperCase()
+    const orderNumber = `BLM-${timestamp}-${random}`
+
+    // Create order with COMPLETED status (payment already succeeded)
     const { data: order, error: orderError } = await supabaseClient
       .from('orders')
-      .select(`
-        *,
-        items:order_items(
-          *,
-          item:items(*)
-        )
-      `)
-      .eq('id', orderId || paymentIntent.metadata.orderId)
+      .insert({
+        order_number: orderNumber,
+        status: 'COMPLETED',
+        pickup_method: 'IN_STORE',
+        payment_method: 'CARD',
+        payment_intent_id: paymentIntentId,
+        subtotal,
+        service_fee: serviceFee,
+        tax: 0,
+        total,
+        buyer_id: buyerId,
+        store_id: storeId,
+        completed_at: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+      })
+      .select()
       .single()
 
-    if (orderError || !order) {
-      throw new Error('Order not found')
+    if (orderError) {
+      console.error('Failed to create order:', orderError)
+      throw new Error('Failed to create order after payment')
     }
-
-    if (order.status === 'COMPLETED') {
-      // Order already completed
-      // Ensure cart is cleared for this order's items
-      const itemIds = order.items.map((oi) => oi.item_id)
-      await supabaseClient
-        .from('cart_items')
-        .delete()
-        .eq('user_id', order.buyer_id)
-        .in('item_id', itemIds)
-      
-      const mappedOrder = mapOrderFields(order)
-      
-      return new Response(
-        JSON.stringify({ order: mappedOrder, message: 'Order already completed' }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 200,
-        }
-      )
-    }
-
-    const itemIds = order.items.map((oi) => oi.item_id)
 
     // Update items to SOLD status (payment succeeded)
     const { error: itemsUpdateError } = await supabaseClient
@@ -123,29 +163,31 @@ serve(async (req) => {
       throw new Error('Failed to mark items as sold. Please contact support.')
     }
 
-    // Update order status to COMPLETED
-    const { data: updatedOrder, error: updateError } = await supabaseClient
-      .from('orders')
-      .update({
-        status: 'COMPLETED',
-        payment_method: 'CARD',
-        completed_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', order.id)
-      .select()
-      .single()
+    // Create order items
+    for (const item of items) {
+      const priceAtPurchase = item.price
+      const platformFee = priceAtPurchase * platformFeeRate
+      const storeCommission = item.is_consignment ? priceAtPurchase * commissionRate : 0
+      const sellerPayout = item.is_consignment
+        ? priceAtPurchase - storeCommission - platformFee
+        : 0
 
-    if (updateError) {
-      console.error('Failed to update order status:', updateError)
-      throw new Error('Failed to complete order. Please contact support.')
+      await supabaseClient.from('order_items').insert({
+        order_id: order.id,
+        item_id: item.id,
+        price_at_purchase: priceAtPurchase,
+        seller_payout: sellerPayout,
+        store_commission: storeCommission,
+        platform_fee: platformFee,
+        created_at: new Date().toISOString(),
+      })
     }
 
-    // Clear cart items ONLY after successful payment and order completion
+    // Clear cart items ONLY after successful payment and order creation
     const { error: cartClearError } = await supabaseClient
       .from('cart_items')
       .delete()
-      .eq('user_id', order.buyer_id)
+      .eq('user_id', buyerId)
       .in('item_id', itemIds)
 
     if (cartClearError) {
@@ -154,38 +196,48 @@ serve(async (req) => {
     }
 
     // Create transactions for each item
-    for (const orderItem of order.items) {
-      const item = orderItem.item
+    for (const item of items) {
+      const priceAtPurchase = item.price
+      const platformFee = priceAtPurchase * platformFeeRate
+      const storeCommission = item.is_consignment ? priceAtPurchase * commissionRate : 0
+      const sellerPayout = item.is_consignment
+        ? priceAtPurchase - storeCommission - platformFee
+        : 0
 
-      // Calculate earnings breakdown
-      const itemPrice = orderItem.price_at_purchase
-      const storeCommission = orderItem.store_commission
-      const sellerPayout = orderItem.seller_payout
-      const platformFee = orderItem.platform_fee
-
-      const { error: transactionError } = await supabaseClient
-        .from('transactions')
-        .insert({
+      if (item.is_consignment && item.seller_id) {
+        await supabaseClient.from('transactions').insert({
           order_id: order.id,
           item_id: item.id,
           seller_id: item.seller_id,
-          amount: itemPrice,
+          amount: priceAtPurchase,
           seller_earnings: sellerPayout,
           store_commission: storeCommission,
           platform_fee: platformFee,
           status: 'COMPLETED',
           completed_at: new Date().toISOString(),
+          created_at: new Date().toISOString(),
         })
-
-      if (transactionError) {
-        console.error('Failed to create transaction:', transactionError)
-        // Don't throw here - order is completed, transactions can be created manually
       }
     }
 
-    console.log(`Order ${order.order_number} completed successfully`)
+    console.log(`Order ${orderNumber} created and completed successfully`)
 
-    const mappedOrder = mapOrderFields(updatedOrder)
+    // Fetch complete order with all details
+    const { data: completeOrder } = await supabaseClient
+      .from('orders')
+      .select(`
+        *,
+        items:order_items(
+          *,
+          item:items(*)
+        ),
+        buyer:users!orders_buyer_id_fkey(*),
+        store:stores!orders_store_id_fkey(*)
+      `)
+      .eq('id', order.id)
+      .single()
+
+    const mappedOrder = mapOrderFields(completeOrder)
 
     return new Response(
       JSON.stringify({

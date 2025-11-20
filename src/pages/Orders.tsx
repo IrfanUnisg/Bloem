@@ -33,7 +33,13 @@ const Orders = () => {
     setIsLoading(true);
     try {
       const userOrders = await orderService.getOrdersByBuyer(user.id);
-      // Filter out PENDING orders (payment not completed yet)
+      console.log('Fetched orders:', userOrders);
+      if (userOrders.length > 0) {
+        console.log('First order sample:', userOrders[0]);
+        console.log('Order number:', userOrders[0].orderNumber);
+        console.log('Created at:', userOrders[0].createdAt);
+      }
+      // Filter out PENDING orders (payment not completed - items still in cart)
       const completedOrders = userOrders.filter(order => order.status !== 'PENDING');
       setOrders(completedOrders);
     } catch (error: any) {
@@ -114,11 +120,11 @@ const Orders = () => {
                     <Package className="h-5 w-5 text-muted-foreground" />
                     <div>
                       <h3 className="font-semibold text-foreground">
-                        Order {order.orderNumber || order.id.slice(0, 8)}
+                        Order {(order.orderNumber || order.id.slice(0, 8)).toUpperCase()}
                       </h3>
                       <p className="text-sm text-muted-foreground flex items-center gap-1">
                         <Calendar className="h-3 w-3" />
-                        Purchase Date: {order.createdAt
+                        {order.createdAt
                           ? format(new Date(order.createdAt), "MMM dd, yyyy")
                           : "N/A"}
                       </p>

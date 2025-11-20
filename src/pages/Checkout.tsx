@@ -16,7 +16,7 @@ import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
 // Payment Form Component
-function PaymentForm({ orderId, total, onSuccess }: { orderId: string; total: number; onSuccess: (paymentIntentId: string) => void }) {
+function PaymentForm({ total, onSuccess }: { total: number; onSuccess: (paymentIntentId: string) => void }) {
   const stripe = useStripe();
   const elements = useElements();
   const { toast } = useToast();
@@ -35,7 +35,7 @@ function PaymentForm({ orderId, total, onSuccess }: { orderId: string; total: nu
       const { error, paymentIntent } = await stripe.confirmPayment({
         elements,
         confirmParams: {
-          return_url: `${window.location.origin}/order-confirmation?orderId=${orderId}`,
+          return_url: `${window.location.origin}/order-confirmation`,
         },
         redirect: "if_required",
       });
@@ -106,7 +106,6 @@ const Checkout = () => {
   const { items, refreshCart } = useCart();
   const { toast } = useToast();
 
-  const [orderId, setOrderId] = useState<string | null>(null);
   const [clientSecret, setClientSecret] = useState<string>("");
   const [isCreatingPayment, setIsCreatingPayment] = useState(false);
   const [hasInitialized, setHasInitialized] = useState(false);
@@ -123,7 +122,6 @@ const Checkout = () => {
       
       if (paymentIntent && redirectStatus === 'succeeded') {
         // Payment completed via redirect, refresh cart and go to confirmation
-        const orderIdParam = searchParams.get('orderId') || location.state?.orderId;
         
         // Refresh cart to sync with database after payment
         // Don't block on auth errors since payment already succeeded
@@ -135,90 +133,54 @@ const Checkout = () => {
           }
         }
         
-        navigate(`/order-confirmation?orderId=${orderIdParam}&payment_intent=${paymentIntent}`, { replace: true });
+        navigate(`/order-confirmation?payment_intent=${paymentIntent}`, { replace: true });
         return;
       }
 
       // THEN: Check authentication and cart
-      const existingOrderId = location.state?.orderId;
 
       if (!user) {
         navigate("/sign-in");
         return;
       }
 
-      // If we have an existing order, skip cart validation
-      if (existingOrderId) {
-        // Using existing order
-      } else {
-        // Check cart BEFORE refreshing to avoid race condition
+      // Check cart
+      if (items.length === 0) {
+        // Try refreshing once to see if items exist
+        await refreshCart();
         
+        // If still empty after refresh, redirect to cart
         if (items.length === 0) {
-          // Try refreshing once to see if items exist
-          await refreshCart();
-          
-          // If still empty after refresh, redirect to cart
-          if (items.length === 0) {
-            toast({
-              title: "Cart is empty",
-              description: "Please add items to your cart before checking out.",
-              variant: "destructive",
-            });
-            navigate("/cart", { replace: true });
-            return;
-          }
+          toast({
+            title: "Cart is empty",
+            description: "Please add items to your cart before checking out.",
+            variant: "destructive",
+          });
+          navigate("/cart", { replace: true });
+          return;
         }
       }
 
       setIsCreatingPayment(true);
 
       try {
-        let currentOrderId = existingOrderId;
-
-        // If no existing order, create one
-        if (!currentOrderId) {
-          // Validate we have items with proper data
-          if (!items || items.length === 0) {
-            throw new Error('No items in cart');
-          }
-
-          // Use item_id (snake_case) from database, not itemId
-          const itemIds = items.map(cartItem => {
-            const id = (cartItem as any).item_id || cartItem.itemId || cartItem.item?.id;
-            if (!id) {
-              console.error('Cart item missing ID:', cartItem);
-              throw new Error('Invalid cart item: missing item ID');
-            }
-            return id;
-          });
-          
-          // Extract store ID from the first item
-          const firstCartItem = items[0];
-          const firstItem = firstCartItem?.item;
-          
-          // Try multiple ways to get store ID
-          let storeId = null;
-          if (firstItem?.store?.id) {
-            storeId = firstItem.store.id;
-          } else if ((firstItem as any)?.store_id) {
-            storeId = (firstItem as any).store_id;
-          } else if ((firstCartItem as any)?.store_id) {
-            storeId = (firstCartItem as any)?.store_id;
-          }
-          
-          if (!storeId) {
-            console.error('Failed to extract store ID from cart items');
-            throw new Error('Unable to determine store for checkout. Please try adding the item to your cart again.');
-          }
-          
-          const order = await orderService.createOrder(user.id, itemIds, storeId);
-          currentOrderId = order.id;
+        // Validate we have items with proper data
+        if (!items || items.length === 0) {
+          throw new Error('No items in cart');
         }
 
-        setOrderId(currentOrderId);
+        // Extract item IDs from cart
+        const itemIds = items.map(cartItem => {
+          const id = (cartItem as any).item_id || cartItem.itemId || cartItem.item?.id;
+          if (!id) {
+            console.error('Cart item missing ID:', cartItem);
+            throw new Error('Invalid cart item: missing item ID');
+          }
+          return id;
+        });
 
-        // Create payment intent
-        const paymentData = await orderService.createPaymentIntent(currentOrderId);
+        // Create payment intent directly with item IDs (no order created yet)
+        const paymentData = await orderService.createPaymentIntent(user.id, itemIds);
         setClientSecret(paymentData.clientSecret);
         setHasInitialized(true);
 
@@ -258,12 +220,16 @@ const Checkout = () => {
     }
 
     // Navigate to order confirmation with payment_intent to trigger confirm-payment edge function
-    navigate(`/order-confirmation?orderId=${orderId}&payment_intent=${paymentIntentId}`);
+    navigate(`/order-confirmation?payment_intent=${paymentIntentId}`);
   };
 
   const subtotal = items.reduce((sum, cartItem) => sum + (cartItem.item?.price || 0), 0);
-  const serviceFee = 0;
-  const total = subtotal + serviceFee;
+  // Service fee only applies to consignment items (10% deducted from seller, shown for transparency)
+  const consignmentSubtotal = items
+    .filter(cartItem => cartItem.item?.is_consignment ?? cartItem.item?.isConsignment ?? true)
+    .reduce((sum, cartItem) => sum + (cartItem.item?.price || 0), 0);
+  const serviceFee = consignmentSubtotal * 0.10;
+  const total = subtotal; // Buyers pay only the item price
 
   if (isCreatingPayment || !clientSecret) {
     return (
@@ -301,7 +267,7 @@ const Checkout = () => {
             <Card className="p-6">
               <h2 className="text-xl font-semibold text-foreground mb-6">Payment Details</h2>
               <Elements stripe={stripePromise} options={stripeOptions}>
-                <PaymentForm orderId={orderId!} total={total} onSuccess={handlePaymentSuccess} />
+                <PaymentForm total={total} onSuccess={handlePaymentSuccess} />
               </Elements>
             </Card>
           </div>
@@ -338,11 +304,11 @@ const Checkout = () => {
 
               <div className="space-y-3 mb-4">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Subtotal</span>
-                  <span className="font-medium text-foreground">€{subtotal.toFixed(2)}</span>
+                  <span className="text-muted-foreground">Payout to Seller</span>
+                  <span className="font-medium text-foreground">€{(subtotal - serviceFee).toFixed(2)}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Service Fee</span>
+                  <span className="text-muted-foreground">Fee</span>
                   <span className="font-medium text-foreground">€{serviceFee.toFixed(2)}</span>
                 </div>
               </div>

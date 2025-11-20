@@ -358,7 +358,7 @@ const Upload = () => {
                   className="mt-1.5"
                 />
                 <p className="text-sm text-muted-foreground mt-1.5">
-                  You'll receive approximately {price ? (parseFloat(price) * 0.75).toFixed(2) : "0.00"}€ after store commission (20%) and platform fee (5%)
+                  You'll receive approximately {price ? (parseFloat(price) * 0.90).toFixed(2) : "0.00"}€ after store commission (7%) and platform fee (3%)
                 </p>
               </div>
 

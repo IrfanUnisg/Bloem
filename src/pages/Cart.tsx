@@ -47,8 +47,12 @@ const Cart = () => {
 
   const isEmpty = items.length === 0;
   const subtotal = items.reduce((sum, cartItem) => sum + (cartItem.item?.price || 0), 0);
-  const serviceFee = 0;
-  const total = subtotal + serviceFee;
+  // Service fee only applies to consignment items (10% deducted from seller, shown for transparency)
+  const consignmentSubtotal = items
+    .filter(cartItem => cartItem.item?.is_consignment ?? cartItem.item?.isConsignment ?? true)
+    .reduce((sum, cartItem) => sum + (cartItem.item?.price || 0), 0);
+  const serviceFee = consignmentSubtotal * 0.10;
+  const total = subtotal; // Buyers pay only the item price
 
   if (isLoading) {
     return (
@@ -143,11 +147,11 @@ const Cart = () => {
 
                 <div className="space-y-3 mb-4">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Subtotal</span>
-                    <span className="font-medium text-foreground">€{subtotal.toFixed(2)}</span>
+                    <span className="text-muted-foreground">Payout to Seller</span>
+                    <span className="font-medium text-foreground">€{(subtotal - serviceFee).toFixed(2)}</span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Service Fee</span>
+                    <span className="text-muted-foreground">Fee</span>
                     <span className="font-medium text-foreground">€{serviceFee.toFixed(2)}</span>
                   </div>
                 </div>

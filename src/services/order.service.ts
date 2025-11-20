@@ -233,9 +233,9 @@ export const orderService = {
   },
 
   /**
-   * Create Stripe Payment Intent for order
+   * Create Stripe Payment Intent for cart items
    */
-  async createPaymentIntent(orderId: string): Promise<{ clientSecret: string; paymentIntentId: string }> {
+  async createPaymentIntent(userId: string, itemIds: string[]): Promise<{ clientSecret: string; paymentIntentId: string }> {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
@@ -248,7 +248,7 @@ export const orderService = {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({ orderId }),
+        body: JSON.stringify({ userId, itemIds }),
       });
 
       if (!response.ok) {
