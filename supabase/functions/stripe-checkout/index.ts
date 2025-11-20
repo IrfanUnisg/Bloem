@@ -55,6 +55,23 @@ serve(async (req) => {
       throw new Error('Order not found')
     }
 
+    // Verify all items are still available (FOR_SALE or already RESERVED for this order)
+    const itemIds = order.items.map((oi: any) => oi.item_id)
+    const { data: items, error: itemsError } = await supabaseClient
+      .from('items')
+      .select('id, status')
+      .in('id', itemIds)
+
+    if (itemsError) throw itemsError
+
+    const unavailableItems = items?.filter((item: any) => 
+      item.status !== 'FOR_SALE' && item.status !== 'RESERVED'
+    ) || []
+
+    if (unavailableItems.length > 0) {
+      throw new Error('Some items are no longer available for purchase. Please return to your cart.')
+    }
+
     // Check if payment intent already exists
     if (order.payment_intent_id) {
       // Retrieve existing payment intent
@@ -64,17 +81,42 @@ serve(async (req) => {
         throw new Error('Order has already been paid')
       }
 
-      return new Response(
-        JSON.stringify({
-          clientSecret: existingIntent.client_secret,
-          paymentIntentId: existingIntent.id,
-        }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 200,
-        }
-      )
+      // If payment was canceled or failed, release items back to FOR_SALE and create new intent
+      if (existingIntent.status === 'canceled' || existingIntent.status === 'requires_payment_method') {
+        // Release items back to FOR_SALE
+        await supabaseClient
+          .from('items')
+          .update({ 
+            status: 'FOR_SALE',
+            updated_at: new Date().toISOString()
+          })\n          .in('id', itemIds)
+          .eq('status', 'RESERVED')
+        
+        // Fall through to create new payment intent below
+      } else {
+        // Reuse existing payment intent (payment still in progress)
+        return new Response(
+          JSON.stringify({
+            clientSecret: existingIntent.client_secret,
+            paymentIntentId: existingIntent.id,
+          }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 200,
+          }
+        )
+      }
     }
+
+    // Reserve items now (during payment intent creation) to prevent double-selling
+    await supabaseClient
+      .from('items')
+      .update({ 
+        status: 'RESERVED',
+        updated_at: new Date().toISOString()
+      })
+      .in('id', itemIds)
+      .eq('status', 'FOR_SALE') // Only update if still FOR_SALE
 
     // Create Stripe Payment Intent
     const paymentIntent = await stripe.paymentIntents.create({
