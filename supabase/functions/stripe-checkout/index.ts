@@ -81,42 +81,21 @@ serve(async (req) => {
         throw new Error('Order has already been paid')
       }
 
-      // If payment was canceled or failed, release items back to FOR_SALE and create new intent
-      if (existingIntent.status === 'canceled' || existingIntent.status === 'requires_payment_method') {
-        // Release items back to FOR_SALE
-        await supabaseClient
-          .from('items')
-          .update({ 
-            status: 'FOR_SALE',
-            updated_at: new Date().toISOString()
-          })\n          .in('id', itemIds)
-          .eq('status', 'RESERVED')
-        
-        // Fall through to create new payment intent below
-      } else {
-        // Reuse existing payment intent (payment still in progress)
-        return new Response(
-          JSON.stringify({
-            clientSecret: existingIntent.client_secret,
-            paymentIntentId: existingIntent.id,
-          }),
-          {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 200,
-          }
-        )
-      }
+      // Reuse existing payment intent (payment still in progress)
+      return new Response(
+        JSON.stringify({
+          clientSecret: existingIntent.client_secret,
+          paymentIntentId: existingIntent.id,
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        }
+      )
     }
 
-    // Reserve items now (during payment intent creation) to prevent double-selling
-    await supabaseClient
-      .from('items')
-      .update({ 
-        status: 'RESERVED',
-        updated_at: new Date().toISOString()
-      })
-      .in('id', itemIds)
-      .eq('status', 'FOR_SALE') // Only update if still FOR_SALE
+    // DO NOT reserve items here - they stay FOR_SALE until payment succeeds
+    // This prevents items from being locked if user abandons checkout
 
     // Create Stripe Payment Intent
     const paymentIntent = await stripe.paymentIntents.create({
