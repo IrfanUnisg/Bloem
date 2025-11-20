@@ -11,6 +11,7 @@ import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { userProfileService, UserProfile, UserStats } from "@/services/user-profile.service";
+import { ChangePasswordDialog } from "@/components/ChangePasswordDialog";
 
 const Profile = () => {
   const { toast } = useToast();
@@ -360,13 +361,23 @@ const Profile = () => {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="font-medium text-foreground">log out</p>
-                  <p className="text-sm text-muted-foreground">sign out of your account</p>
+                  <p className="font-medium text-foreground">change password</p>
+                  <p className="text-sm text-muted-foreground">update your account password</p>
                 </div>
-                <Button variant="outline" onClick={handleLogout}>
-                  <LogOut className="mr-2 h-4 w-4" />
-                  log out
-                </Button>
+                <ChangePasswordDialog />
+              </div>
+
+              <div className="border-t pt-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium text-foreground">log out</p>
+                    <p className="text-sm text-muted-foreground">sign out of your account</p>
+                  </div>
+                  <Button variant="outline" onClick={handleLogout}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    log out
+                  </Button>
+                </div>
               </div>
 
               <div className="border-t pt-4">

@@ -23,6 +23,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { storeService, StoreStats } from "@/services/store.service";
 import { supabase } from "@/lib/supabase";
 import type { Store as StoreType } from "@/services/store.service";
+import { ChangePasswordDialog } from "@/components/ChangePasswordDialog";
 
 const StoreProfile = () => {
   const { toast } = useToast();
@@ -211,13 +212,23 @@ const StoreProfile = () => {
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="font-medium text-foreground">log out</p>
-                    <p className="text-sm text-muted-foreground">sign out of your account</p>
+                    <p className="font-medium text-foreground">change password</p>
+                    <p className="text-sm text-muted-foreground">update your account password</p>
                   </div>
-                  <Button variant="outline" onClick={handleLogout}>
-                    <LogOut className="mr-2 h-4 w-4" />
-                    log out
-                  </Button>
+                  <ChangePasswordDialog />
+                </div>
+
+                <div className="border-t pt-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-foreground">log out</p>
+                      <p className="text-sm text-muted-foreground">sign out of your account</p>
+                    </div>
+                    <Button variant="outline" onClick={handleLogout}>
+                      <LogOut className="mr-2 h-4 w-4" />
+                      log out
+                    </Button>
+                  </div>
                 </div>
               </div>
             </Card>
@@ -373,13 +384,23 @@ const StoreProfile = () => {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="font-medium text-foreground">log out</p>
-                  <p className="text-sm text-muted-foreground">sign out of your store account</p>
+                  <p className="font-medium text-foreground">change password</p>
+                  <p className="text-sm text-muted-foreground">update your account password</p>
                 </div>
-                <Button variant="outline" onClick={handleLogout}>
-                  <LogOut className="mr-2 h-4 w-4" />
-                  log out
-                </Button>
+                <ChangePasswordDialog />
+              </div>
+
+              <div className="border-t pt-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium text-foreground">log out</p>
+                    <p className="text-sm text-muted-foreground">sign out of your store account</p>
+                  </div>
+                  <Button variant="outline" onClick={handleLogout}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    log out
+                  </Button>
+                </div>
               </div>
 
               <div className="flex items-center justify-between pt-4 border-t">

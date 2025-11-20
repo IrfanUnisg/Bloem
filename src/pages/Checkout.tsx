@@ -16,7 +16,7 @@ import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
 // Payment Form Component
-function PaymentForm({ orderId, total, onSuccess }: { orderId: string; total: number; onSuccess: () => void }) {
+function PaymentForm({ orderId, total, onSuccess }: { orderId: string; total: number; onSuccess: (paymentIntentId: string) => void }) {
   const stripe = useStripe();
   const elements = useElements();
   const { toast } = useToast();
@@ -32,7 +32,7 @@ function PaymentForm({ orderId, total, onSuccess }: { orderId: string; total: nu
     setIsProcessing(true);
 
     try {
-      const { error } = await stripe.confirmPayment({
+      const { error, paymentIntent } = await stripe.confirmPayment({
         elements,
         confirmParams: {
           return_url: `${window.location.origin}/order-confirmation?orderId=${orderId}`,
@@ -46,9 +46,9 @@ function PaymentForm({ orderId, total, onSuccess }: { orderId: string; total: nu
           description: error.message || "An error occurred during payment.",
           variant: "destructive",
         });
-      } else {
-        // Payment successful
-        onSuccess();
+      } else if (paymentIntent) {
+        // Payment successful, pass payment intent ID to parent
+        onSuccess(paymentIntent.id);
       }
     } catch (error: any) {
       toast({
@@ -181,11 +181,45 @@ const Checkout = () => {
 
         // If no existing order, create one
         if (!currentOrderId) {
-          // Use item_id (snake_case) from database, not itemId
-          const itemIds = items.map(cartItem => (cartItem as any).item_id || cartItem.itemId);
-          const storeId = (items[0].item as any)?.store_id || items[0].item?.storeId;
+          // Validate we have items with proper data
+          if (!items || items.length === 0) {
+            throw new Error('No items in cart');
+          }
+
+          console.log('DEBUG: Cart items:', JSON.stringify(items, null, 2));
           
-          console.log('DEBUG: Creating order with itemIds:', itemIds, 'storeId:', storeId);
+          // Use item_id (snake_case) from database, not itemId
+          const itemIds = items.map(cartItem => {
+            const id = (cartItem as any).item_id || cartItem.itemId || cartItem.item?.id;
+            if (!id) {
+              console.error('Cart item missing ID:', cartItem);
+              throw new Error('Invalid cart item: missing item ID');
+            }
+            return id;
+          });
+          
+          // Extract store ID from the first item
+          const firstCartItem = items[0];
+          const firstItem = firstCartItem?.item;
+          
+          // Try multiple ways to get store ID
+          let storeId = null;
+          if (firstItem?.store?.id) {
+            storeId = firstItem.store.id;
+          } else if ((firstItem as any)?.store_id) {
+            storeId = (firstItem as any).store_id;
+          } else if ((firstCartItem as any)?.store_id) {
+            storeId = (firstCartItem as any).store_id;
+          }
+          
+          console.log('DEBUG: Extracted data - itemIds:', itemIds, 'storeId:', storeId);
+          console.log('DEBUG: First cart item:', firstCartItem);
+          console.log('DEBUG: First item:', firstItem);
+          
+          if (!storeId) {
+            console.error('Failed to extract store ID from cart items');
+            throw new Error('Unable to determine store for checkout. Please try adding the item to your cart again.');
+          }
           
           const order = await orderService.createOrder(user.id, itemIds, storeId);
           console.log('DEBUG: Order created successfully:', order.id);
@@ -220,7 +254,7 @@ const Checkout = () => {
     initializeCheckout();
   }, []); // Run only once on mount
 
-  const handlePaymentSuccess = async () => {
+  const handlePaymentSuccess = async (paymentIntentId: string) => {
     toast({
       title: "Payment successful!",
       description: "Your order has been confirmed.",
@@ -234,8 +268,8 @@ const Checkout = () => {
       console.warn('Cart refresh failed after payment, but continuing:', error);
     }
 
-    // Navigate to order confirmation
-    navigate(`/order-confirmation?orderId=${orderId}`);
+    // Navigate to order confirmation with payment_intent to trigger confirm-payment edge function
+    navigate(`/order-confirmation?orderId=${orderId}&payment_intent=${paymentIntentId}`);
   };
 
   const subtotal = items.reduce((sum, cartItem) => sum + (cartItem.item?.price || 0), 0);

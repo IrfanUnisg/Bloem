@@ -4,7 +4,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, cache-control, pragma',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
 }
 
 serve(async (req) => {
@@ -87,6 +88,12 @@ serve(async (req) => {
       // Generate unique QR code
       const qrCode = `BLM-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
 
+      // Determine initial status based on ownership
+      // Store-owned items go directly to FOR_SALE
+      // Consignment items need store approval (PENDING_DROPOFF)
+      const initialStatus = is_consignment ? 'PENDING_DROPOFF' : 'FOR_SALE'
+      const listedAt = is_consignment ? null : new Date().toISOString()
+
       const { data: item, error } = await supabaseClient
         .from('items')
         .insert({
@@ -104,8 +111,9 @@ serve(async (req) => {
           seller_id,
           is_consignment,
           hanger_fee: parseFloat(hanger_fee),
-          status: 'PENDING_DROPOFF',
+          status: initialStatus,
           uploaded_at: new Date().toISOString(),
+          listed_at: listedAt,
         })
         .select()
         .single()

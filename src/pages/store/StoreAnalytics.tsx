@@ -1,10 +1,112 @@
+import { useState, useEffect } from "react";
 import { StoreLayout } from "@/components/layout/StoreLayout";
 import { StatCard } from "@/components/cards/StatCard";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DollarSign, Package, TrendingUp, Users } from "lucide-react";
+import { DollarSign, Package, TrendingUp, Users, Loader2, ShoppingBag } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { storeService } from "@/services/store.service";
+import { itemService } from "@/services/item.service";
+import { useToast } from "@/hooks/use-toast";
 
 const StoreAnalytics = () => {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    itemsSoldThisMonth: 0,
+    monthlyRevenue: 0,
+    activeInventory: 0,
+  });
+  const [inventoryBreakdown, setInventoryBreakdown] = useState({
+    storeOwned: 0,
+    consignment: 0,
+    pendingDropoff: 0,
+  });
+  const [categoryData, setCategoryData] = useState<{ category: string; count: number }[]>([]);
+
+  useEffect(() => {
+    loadAnalytics();
+  }, [user]);
+
+  const loadAnalytics = async () => {
+    if (!user) return;
+
+    setLoading(true);
+    try {
+      // Get store owned by current user
+      const store = await storeService.getStoreByOwnerId(user.id);
+      
+      if (!store) {
+        toast({
+          title: "No store found",
+          description: "You don't have a store associated with your account.",
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+
+      // Get store statistics
+      const storeStats = await storeService.getStoreStats(store.id);
+      setStats(storeStats);
+
+      // Get all items for breakdown
+      const allItems = await itemService.getItemsByStore(store.id);
+      
+      // Calculate inventory breakdown
+      const storeOwned = allItems.filter(item => !item.is_consignment && item.status === 'FOR_SALE').length;
+      const consignment = allItems.filter(item => item.is_consignment && item.status === 'FOR_SALE').length;
+      const pendingDropoff = allItems.filter(item => item.status === 'PENDING_DROPOFF').length;
+      
+      setInventoryBreakdown({ storeOwned, consignment, pendingDropoff });
+
+      // Calculate category distribution
+      const categoryMap = new Map<string, number>();
+      allItems.forEach(item => {
+        if (item.status === 'FOR_SALE') {
+          categoryMap.set(item.category, (categoryMap.get(item.category) || 0) + 1);
+        }
+      });
+      
+      const categories = Array.from(categoryMap.entries())
+        .map(([category, count]) => ({ category, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 5);
+      
+      setCategoryData(categories);
+
+      console.log('Store Stats:', storeStats);
+      console.log('All Items:', allItems);
+      console.log('Inventory Breakdown:', { storeOwned, consignment, pendingDropoff });
+      console.log('Category Data:', categories);
+
+    } catch (error) {
+      console.error("Error loading analytics:", error);
+      toast({
+        title: "Error loading analytics",
+        description: "Failed to load analytics data. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <StoreLayout>
+        <div className="p-6 md:p-8 flex items-center justify-center min-h-[400px]">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      </StoreLayout>
+    );
+  }
+
+  const averageSalePrice = stats.itemsSoldThisMonth > 0 
+    ? stats.monthlyRevenue / stats.itemsSoldThisMonth 
+    : 0;
+
   return (
     <StoreLayout>
       <div className="p-6 md:p-8">
@@ -18,8 +120,7 @@ const StoreAnalytics = () => {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="7days">Last 7 Days</SelectItem>
-              <SelectItem value="30days">Last 30 Days</SelectItem>
+              <SelectItem value="30days">This Month</SelectItem>
               <SelectItem value="90days">Last 90 Days</SelectItem>
               <SelectItem value="year">This Year</SelectItem>
             </SelectContent>
@@ -29,46 +130,103 @@ const StoreAnalytics = () => {
         {/* Key Metrics */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <StatCard
-            label="Total Sales"
-            value="€2,845"
-            trend="up"
-            trendValue="+18% from last month"
+            label="Monthly Revenue"
+            value={`€${stats.monthlyRevenue.toFixed(2)}`}
             icon={<DollarSign className="h-6 w-6" />}
           />
           <StatCard
-            label="Items Sold"
-            value="47"
-            trend="up"
-            trendValue="+12 items"
+            label="Items Sold This Month"
+            value={stats.itemsSoldThisMonth.toString()}
             icon={<Package className="h-6 w-6" />}
           />
           <StatCard
             label="Average Sale Price"
-            value="€60.53"
-            trend="up"
-            trendValue="+€5.20"
+            value={`€${averageSalePrice.toFixed(2)}`}
             icon={<TrendingUp className="h-6 w-6" />}
           />
           <StatCard
-            label="Active Consignments"
-            value="23"
-            icon={<Users className="h-6 w-6" />}
+            label="Active Inventory"
+            value={stats.activeInventory.toString()}
+            icon={<ShoppingBag className="h-6 w-6" />}
           />
         </div>
 
         {/* Charts */}
         <div className="grid lg:grid-cols-2 gap-6 mb-8">
           <Card className="p-6">
-            <h3 className="text-lg font-semibold text-foreground mb-4">Sales Over Time</h3>
-            <div className="h-64 border-2 border-dashed border-muted rounded-lg flex items-center justify-center text-muted-foreground">
-              Line Chart Placeholder
-            </div>
+            <h3 className="text-lg font-semibold text-foreground mb-4">Top Categories</h3>
+            {categoryData.length > 0 ? (
+              <div className="space-y-4">
+                {categoryData.map((item, index) => (
+                  <div key={item.category} className="space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-foreground">{item.category}</span>
+                      <span className="font-medium text-foreground">{item.count} items</span>
+                    </div>
+                    <div className="w-full bg-muted rounded-full h-2">
+                      <div 
+                        className="bg-accent h-2 rounded-full transition-all"
+                        style={{ 
+                          width: `${(item.count / Math.max(...categoryData.map(c => c.count))) * 100}%` 
+                        }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="h-64 border-2 border-dashed border-muted rounded-lg flex items-center justify-center text-muted-foreground">
+                No category data available
+              </div>
+            )}
           </Card>
 
           <Card className="p-6">
-            <h3 className="text-lg font-semibold text-foreground mb-4">Top Categories</h3>
-            <div className="h-64 border-2 border-dashed border-muted rounded-lg flex items-center justify-center text-muted-foreground">
-              Bar Chart Placeholder
+            <h3 className="text-lg font-semibold text-foreground mb-4">Inventory Status</h3>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-foreground">For Sale</span>
+                  <span className="font-medium text-foreground">{stats.activeInventory} items</span>
+                </div>
+                <div className="w-full bg-muted rounded-full h-2">
+                  <div className="bg-green-500 h-2 rounded-full" style={{ width: '100%' }} />
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-foreground">Pending Drop-off</span>
+                  <span className="font-medium text-foreground">{inventoryBreakdown.pendingDropoff} items</span>
+                </div>
+                <div className="w-full bg-muted rounded-full h-2">
+                  <div 
+                    className="bg-yellow-500 h-2 rounded-full" 
+                    style={{ 
+                      width: stats.activeInventory > 0 
+                        ? `${(inventoryBreakdown.pendingDropoff / (stats.activeInventory + inventoryBreakdown.pendingDropoff)) * 100}%`
+                        : '0%'
+                    }} 
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-foreground">Sold This Month</span>
+                  <span className="font-medium text-foreground">{stats.itemsSoldThisMonth} items</span>
+                </div>
+                <div className="w-full bg-muted rounded-full h-2">
+                  <div 
+                    className="bg-blue-500 h-2 rounded-full" 
+                    style={{ 
+                      width: stats.activeInventory > 0 
+                        ? `${(stats.itemsSoldThisMonth / (stats.activeInventory + stats.itemsSoldThisMonth)) * 100}%`
+                        : '0%'
+                    }} 
+                  />
+                </div>
+              </div>
             </div>
           </Card>
         </div>
@@ -79,15 +237,18 @@ const StoreAnalytics = () => {
           <div className="grid md:grid-cols-3 gap-4">
             <div className="p-4 bg-muted/30 rounded-lg">
               <p className="text-sm text-muted-foreground mb-1">Store-Owned Items</p>
-              <p className="text-2xl font-bold text-foreground">156</p>
+              <p className="text-2xl font-bold text-foreground">{inventoryBreakdown.storeOwned}</p>
+              <p className="text-xs text-muted-foreground mt-1">Ready for sale</p>
             </div>
             <div className="p-4 bg-muted/30 rounded-lg">
               <p className="text-sm text-muted-foreground mb-1">Consignment Items</p>
-              <p className="text-2xl font-bold text-foreground">89</p>
+              <p className="text-2xl font-bold text-foreground">{inventoryBreakdown.consignment}</p>
+              <p className="text-xs text-muted-foreground mt-1">From sellers</p>
             </div>
             <div className="p-4 bg-muted/30 rounded-lg">
-              <p className="text-sm text-muted-foreground mb-1">Turnover Rate</p>
-              <p className="text-2xl font-bold text-foreground">72%</p>
+              <p className="text-sm text-muted-foreground mb-1">Pending Approval</p>
+              <p className="text-2xl font-bold text-foreground">{inventoryBreakdown.pendingDropoff}</p>
+              <p className="text-xs text-muted-foreground mt-1">Awaiting review</p>
             </div>
           </div>
         </Card>

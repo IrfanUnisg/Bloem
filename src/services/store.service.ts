@@ -250,30 +250,100 @@ export const storeService = {
         .gte('sold_at', firstDayOfMonth)
         .lte('sold_at', lastDayOfMonth);
 
-      // Get monthly revenue from transactions
-      const { data: transactions } = await supabase
-        .from('transactions')
-        .select('store_commission')
-        .eq('status', 'COMPLETED')
-        .gte('created_at', firstDayOfMonth)
-        .lte('created_at', lastDayOfMonth);
-
-      // Calculate revenue from order_items associated with this store
-      const { data: orderItems } = await supabase
-        .from('order_items')
-        .select('store_commission, item:items!inner(store_id)')
-        .eq('item.store_id', storeId)
-        .gte('created_at', firstDayOfMonth)
-        .lte('created_at', lastDayOfMonth);
-
-      const monthlyRevenue = orderItems?.reduce((sum, oi) => sum + (oi.store_commission || 0), 0) || 0;
-
       // Get active inventory count
       const { count: activeInventory } = await supabase
         .from('items')
         .select('*', { count: 'exact', head: true })
         .eq('store_id', storeId)
         .eq('status', 'FOR_SALE');
+
+      // Get store revenue from order_items
+      // This includes:
+      // 1. Full price of store-owned items (minus platform fee)
+      // 2. Commission from consignment items
+      
+      // First, get all COMPLETED orders for this store
+      const { data: orders, error: ordersError } = await supabase
+        .from('orders')
+        .select('id, status, completed_at, created_at')
+        .eq('store_id', storeId)
+        .eq('status', 'COMPLETED');
+
+      console.log('Store stats - all COMPLETED orders:', orders?.length || 0, ordersError);
+      if (orders && orders.length > 0) {
+        console.log('First order:', orders[0]);
+      }
+      
+      // Filter by month client-side to handle null completed_at
+      const ordersThisMonth = orders?.filter(order => {
+        const completedDate = order.completed_at ? new Date(order.completed_at) : new Date(order.created_at);
+        return completedDate >= new Date(firstDayOfMonth) && completedDate <= new Date(lastDayOfMonth);
+      }) || [];
+
+      console.log('Store stats - orders this month:', ordersThisMonth.length);
+      
+      if (!ordersThisMonth || ordersThisMonth.length === 0) {
+        return {
+          itemsSoldThisMonth: itemsSoldThisMonth || 0,
+          monthlyRevenue: 0,
+          activeInventory: activeInventory || 0,
+        };
+      }
+
+      // Get order items for these orders
+      const orderIds = ordersThisMonth.map(o => o.id);
+      
+      console.log('Fetching order_items for order IDs:', orderIds);
+      
+      const { data: orderItems, error: itemsError } = await supabase
+        .from('order_items')
+        .select('*')
+        .in('order_id', orderIds);
+      
+      console.log('Store stats - orderItems raw:', orderItems?.length || 0, itemsError);
+      
+      if (!orderItems || orderItems.length === 0) {
+        console.log('No order items found for these orders');
+        return {
+          itemsSoldThisMonth: itemsSoldThisMonth || 0,
+          monthlyRevenue: 0,
+          activeInventory: activeInventory || 0,
+        };
+      }
+      
+      // Now get item details for each order_item
+      const itemIds = orderItems.map((oi: any) => oi.item_id);
+      const { data: items, error: itemsDetailsError } = await supabase
+        .from('items')
+        .select('id, store_id, is_consignment')
+        .in('id', itemIds);
+      
+      console.log('Item details fetched:', items?.length || 0, itemsDetailsError);
+      
+      // Create a map for quick lookup
+      const itemsMap = new Map(items?.map((i: any) => [i.id, i]) || []);
+      
+      // Combine order_items with item details
+      const enrichedOrderItems = orderItems.map((oi: any) => ({
+        ...oi,
+        item: itemsMap.get(oi.item_id)
+      }));
+      
+      console.log('Store stats - orderItems total:', enrichedOrderItems.length);
+      if (enrichedOrderItems && enrichedOrderItems.length > 0) {
+        console.log('First order item:', enrichedOrderItems[0]);
+      }
+
+      // Calculate total store revenue
+      const monthlyRevenue = enrichedOrderItems?.reduce((sum, oi: any) => {
+        if (oi.item.is_consignment) {
+          // For consignment: store gets commission
+          return sum + (oi.store_commission || 0);
+        } else {
+          // For store-owned: store gets full price minus platform fee
+          return sum + (oi.price_at_purchase - oi.platform_fee);
+        }
+      }, 0) || 0;
 
       return {
         itemsSoldThisMonth: itemsSoldThisMonth || 0,

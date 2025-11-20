@@ -10,6 +10,7 @@ export const EDGE_FUNCTIONS = {
   STRIPE_CHECKOUT: `${SUPABASE_FUNCTIONS_URL}/stripe-checkout`,
   COMPLETE_ORDER: `${SUPABASE_FUNCTIONS_URL}/complete-order`,
   CONFIRM_PAYMENT: `${SUPABASE_FUNCTIONS_URL}/confirm-payment`,
+  DELETE_ACCOUNT: `${SUPABASE_FUNCTIONS_URL}/delete-account`,
 } as const;
 
 export default EDGE_FUNCTIONS;

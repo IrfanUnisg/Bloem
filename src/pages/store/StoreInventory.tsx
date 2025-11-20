@@ -66,8 +66,8 @@ const StoreInventory = () => {
                          item.category.toLowerCase().includes(searchQuery.toLowerCase());
     
     if (filterType === "all") return matchesSearch;
-    if (filterType === "consignment") return matchesSearch && item.isConsignment;
-    if (filterType === "store") return matchesSearch && !item.isConsignment;
+    if (filterType === "consignment") return matchesSearch && item.is_consignment;
+    if (filterType === "store") return matchesSearch && !item.is_consignment;
     
     return matchesSearch;
   });
@@ -96,7 +96,7 @@ const StoreInventory = () => {
               <QrCode className="mr-2 h-4 w-4" />
               Process Drop-offs
             </Button>
-            <Button onClick={() => toast({ title: "Coming soon", description: "Add store-owned items feature coming soon!" })}>
+            <Button onClick={() => navigate("/store/add-item")}>
               <Plus className="mr-2 h-4 w-4" />
               Add Store Item
             </Button>
@@ -130,8 +130,8 @@ const StoreInventory = () => {
         <Tabs value={filterType} onValueChange={(v) => setFilterType(v as any)} className="mb-6">
           <TabsList>
             <TabsTrigger value="all">All Items ({items.length})</TabsTrigger>
-            <TabsTrigger value="consignment">Consignment ({items.filter(i => i.isConsignment).length})</TabsTrigger>
-            <TabsTrigger value="store">Store-Owned ({items.filter(i => !i.isConsignment).length})</TabsTrigger>
+            <TabsTrigger value="consignment">Consignment ({items.filter(i => i.is_consignment).length})</TabsTrigger>
+            <TabsTrigger value="store">Store-Owned ({items.filter(i => !i.is_consignment).length})</TabsTrigger>
           </TabsList>
         </Tabs>
 
@@ -162,7 +162,7 @@ const StoreInventory = () => {
                     price={item.price}
                     image={item.images[0] || '/placeholder.svg'}
                     condition={item.condition}
-                    type={item.isConsignment ? "consignment" : "store-owned"}
+                    type={item.is_consignment ? "consignment" : "store-owned"}
                   />
                 ))}
               </div>
@@ -188,8 +188,8 @@ const StoreInventory = () => {
                       <TableRow key={item.id}>
                         <TableCell className="font-medium">{item.title}</TableCell>
                         <TableCell>
-                          <Badge variant={item.isConsignment ? "default" : "secondary"}>
-                            {item.isConsignment ? "Consignment" : "Store"}
+                          <Badge variant={item.is_consignment ? "default" : "secondary"}>
+                            {item.is_consignment ? "Consignment" : "Store"}
                           </Badge>
                         </TableCell>
                         <TableCell>{item.seller?.name || 'N/A'}</TableCell>

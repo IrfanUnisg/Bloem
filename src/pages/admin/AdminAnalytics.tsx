@@ -3,6 +3,7 @@ import { AdminLayout } from "@/components/layout/AdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, Store, TrendingUp, Euro, Package, Clock, Loader2 } from "lucide-react";
 import { adminService } from "@/services/admin.service";
+import { supabase } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
 
 const AdminAnalytics = () => {
@@ -12,6 +13,8 @@ const AdminAnalytics = () => {
     totalUsers: 0,
     totalStores: 0,
     totalItems: 0,
+    totalTransactions: 0,
+    totalSalesAmount: 0,
   });
   const [pendingStores, setPendingStores] = useState(0);
 
@@ -23,7 +26,25 @@ const AdminAnalytics = () => {
     setLoading(true);
     try {
       const platformStats = await adminService.getPlatformStats();
-      setStats(platformStats);
+      
+      // Get total number of transactions
+      const { count: totalTransactions } = await supabase
+        .from('transactions')
+        .select('*', { count: 'exact', head: true });
+
+      // Get total sales amount (sum of all item prices from sold items)
+      const { data: soldItems } = await supabase
+        .from('items')
+        .select('price')
+        .eq('status', 'SOLD');
+
+      const totalSalesAmount = soldItems?.reduce((sum, item) => sum + (item.price || 0), 0) || 0;
+
+      setStats({
+        ...platformStats,
+        totalTransactions: totalTransactions || 0,
+        totalSalesAmount,
+      });
 
       const applications = await adminService.getStoreApplications();
       setPendingStores(applications.filter(a => a.status === 'pending').length);
@@ -58,55 +79,11 @@ const AdminAnalytics = () => {
             <p className="text-muted-foreground">Overview of Bloem's performance and growth</p>
           </div>
 
-          {/* Key Metrics */}
-          <div className="grid md:grid-cols-3 lg:grid-cols-6 gap-6 mb-8">
+          {/* Key Metrics - 2x3 Grid */}
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.totalUsers.toLocaleString()}</div>
-                <p className="text-xs text-muted-foreground mt-1">Sellers & buyers</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">Partner Stores</CardTitle>
-                <Store className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.totalStores}</div>
-                <p className="text-xs text-muted-foreground mt-1">All stores</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">Total Items</CardTitle>
-                <Package className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.totalItems.toLocaleString()}</div>
-                <p className="text-xs text-muted-foreground mt-1">All-time uploads</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">Pending Reviews</CardTitle>
-                <Clock className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{pendingStores}</div>
-                <p className="text-xs text-muted-foreground mt-1">Store applications</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">Revenue</CardTitle>
+                <CardTitle className="text-sm font-medium">Platform Revenue</CardTitle>
                 <Euro className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
@@ -121,8 +98,66 @@ const AdminAnalytics = () => {
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">0</div>
-                <p className="text-xs text-muted-foreground mt-1">Coming soon</p>
+                <div className="text-2xl font-bold">{stats.totalTransactions}</div>
+                <p className="text-xs text-muted-foreground mt-1">Total completed</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Sales Amount</CardTitle>
+                <Euro className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">€{stats.totalSalesAmount.toFixed(2)}</div>
+                <p className="text-xs text-muted-foreground mt-1">Total sales</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Stores Approved</CardTitle>
+                <Store className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.totalStores}</div>
+                <p className="text-xs text-muted-foreground mt-1">All stores</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Platform Users</CardTitle>
+                <Users className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.totalUsers}</div>
+                <p className="text-xs text-muted-foreground mt-1">Sellers & buyers</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Total Items</CardTitle>
+                <Package className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.totalItems.toLocaleString()}</div>
+                <p className="text-xs text-muted-foreground mt-1">All-time uploads</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Secondary Metric */}
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Pending Reviews</CardTitle>
+                <Clock className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{pendingStores}</div>
+                <p className="text-xs text-muted-foreground mt-1">Store applications</p>
               </CardContent>
             </Card>
           </div>
@@ -150,6 +185,14 @@ const AdminAnalytics = () => {
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Pending Store Reviews</span>
                   <span className="text-lg font-semibold">{pendingStores}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Total Transactions</span>
+                  <span className="text-lg font-semibold">{stats.totalTransactions}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Sales Amount</span>
+                  <span className="text-lg font-semibold">€{stats.totalSalesAmount.toFixed(2)}</span>
                 </div>
               </CardContent>
             </Card>

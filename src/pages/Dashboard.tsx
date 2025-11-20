@@ -1,18 +1,19 @@
 import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { ItemCard } from "@/components/cards/ItemCard";
-import { StatCard } from "@/components/cards/StatCard";
 import { EmptyState } from "@/components/placeholders/EmptyState";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Package, DollarSign, TrendingUp, Upload, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { itemService } from "@/services/item.service";
 import { orderService } from "@/services/order.service";
+import { supabase } from "@/lib/supabase";
 import { ItemWithRelations, OrderWithItems } from "@/types";
 import { useToast } from "@/hooks/use-toast";
+import { Upload, Package } from "lucide-react";
 
 type ItemStatus = "all" | "FOR_SALE" | "SOLD" | "PENDING_DROPOFF" | "RESERVED";
 
@@ -58,6 +59,12 @@ const Dashboard = () => {
     setIsLoadingOrders(true);
     try {
       const userOrders = await orderService.getOrdersBySeller(user.id);
+      console.log('=== DASHBOARD fetchUserOrders ===');
+      console.log('Total orders fetched:', userOrders.length);
+      if (userOrders.length > 0) {
+        console.log('First order:', userOrders[0]);
+        console.log('First order items:', userOrders[0].items);
+      }
       setOrders(userOrders);
     } catch (error) {
       console.error("Error fetching orders:", error);
@@ -98,21 +105,46 @@ const Dashboard = () => {
     filterStatus === "all" ? true : item.status === filterStatus
   );
 
-  const stats = {
-    totalEarnings: orders
-      .filter(o => o.status === "COMPLETED")
-      .reduce((sum, order) => {
-        const sellerItems = order.items?.filter(oi => oi.item?.sellerId === user?.id) || [];
-        return sum + sellerItems.reduce((itemSum, oi) => itemSum + oi.sellerPayout, 0);
-      }, 0),
-    pendingPayouts: orders
-      .filter(o => o.status === "RESERVED")
-      .reduce((sum, order) => {
-        const sellerItems = order.items?.filter(oi => oi.item?.sellerId === user?.id) || [];
-        return sum + sellerItems.reduce((itemSum, oi) => itemSum + oi.sellerPayout, 0);
-      }, 0),
-    itemsSold: items.filter(i => i.status === "SOLD").length,
+  // Calculate stats using the same approach as Profile page
+  const [stats, setStats] = useState({
+    totalEarnings: 0,
+    itemsSold: 0,
+  });
+
+  useEffect(() => {
+    if (user) {
+      fetchStats();
+    }
+  }, [user, items]);
+
+  const fetchStats = async () => {
+    if (!user) return;
+
+    try {
+      // Get total earnings from completed transactions
+      const { data: completedTransactions } = await supabase
+        .from('transactions')
+        .select('seller_earnings')
+        .eq('seller_id', user.id)
+        .eq('status', 'COMPLETED');
+
+      const totalEarnings = completedTransactions?.reduce((sum, t) => sum + (t.seller_earnings || 0), 0) || 0;
+
+      // Get items sold count
+      const itemsSold = items.filter(i => i.status === "SOLD").length;
+
+      setStats({
+        totalEarnings,
+        itemsSold,
+      });
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+    }
   };
+
+  // Add a helper function to check user roles
+  const isStoreOrAdmin = user?.role === "store" || user?.role === "admin";
+
   return (
     <DashboardLayout>
       <div className="p-6 md:p-8">
@@ -133,8 +165,56 @@ const Dashboard = () => {
         <Tabs defaultValue="listings" className="space-y-6">
           <TabsList>
             <TabsTrigger value="listings">My Listings</TabsTrigger>
-            <TabsTrigger value="earnings">Earnings</TabsTrigger>
+            <TabsTrigger value="analytics">Analytics</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="analytics" className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Card className="p-6">
+                <div className="flex flex-col items-center text-center">
+                  <div className="text-4xl font-bold text-primary mb-2">
+                    {stats.itemsSold}
+                  </div>
+                  <p className="text-sm text-muted-foreground">items sold</p>
+                </div>
+              </Card>
+              
+              <Card className="p-6">
+                <div className="flex flex-col items-center text-center">
+                  <div className="text-4xl font-bold text-primary mb-2">
+                    €{stats.totalEarnings.toFixed(2)}
+                  </div>
+                  <p className="text-sm text-muted-foreground">total earnings</p>
+                </div>
+              </Card>
+            </div>
+
+            <Card className="p-6">
+              <h3 className="text-xl font-semibold text-foreground mb-6">
+                earnings overview
+              </h3>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between py-3 border-b">
+                  <span className="text-muted-foreground">total earnings</span>
+                  <span className="font-semibold text-foreground">
+                    €{stats.totalEarnings.toFixed(2)}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between py-3 border-b">
+                  <span className="text-muted-foreground">items sold</span>
+                  <span className="font-semibold text-foreground">
+                    {stats.itemsSold}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between py-3">
+                  <span className="text-muted-foreground">active listings</span>
+                  <span className="font-semibold text-foreground">
+                    {items.filter(i => i.status === "FOR_SALE").length}
+                  </span>
+                </div>
+              </div>
+            </Card>
+          </TabsContent>
 
           <TabsContent value="listings" className="space-y-6">
             {/* Filter Tabs */}
@@ -186,87 +266,6 @@ const Dashboard = () => {
                 actionLabel="Upload Item" 
                 actionHref="/upload" 
               />
-            )}
-          </TabsContent>
-
-          <TabsContent value="earnings" className="space-y-6">
-            {/* Stats */}
-            {isLoadingOrders ? (
-              <div className="flex justify-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
-            ) : (
-              <>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <StatCard 
-                    label="Total Earnings" 
-                    value={`€${stats.totalEarnings.toFixed(2)}`}
-                    icon={<DollarSign className="h-6 w-6" />} 
-                  />
-                  <StatCard 
-                    label="Pending Payouts" 
-                    value={`€${stats.pendingPayouts.toFixed(2)}`}
-                    icon={<Package className="h-6 w-6" />} 
-                  />
-                  <StatCard 
-                    label="Items Sold" 
-                    value={String(stats.itemsSold)}
-                    icon={<TrendingUp className="h-6 w-6" />} 
-                  />
-                </div>
-
-                {/* Transaction History */}
-                <div>
-                  <h2 className="text-xl font-semibold text-foreground mb-4">Transaction History</h2>
-                  {orders.length > 0 ? (
-                    <div className="border rounded-lg overflow-hidden">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Date</TableHead>
-                            <TableHead>Order ID</TableHead>
-                            <TableHead>Items</TableHead>
-                            <TableHead>Your Earnings</TableHead>
-                            <TableHead>Status</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {orders.map((order) => {
-                            const sellerItems = order.items?.filter(oi => oi.item?.sellerId === user?.id) || [];
-                            const sellerEarnings = sellerItems.reduce((sum, oi) => sum + oi.sellerPayout, 0);
-                            
-                            return (
-                              <TableRow key={order.id}>
-                                <TableCell>{new Date(order.createdAt).toLocaleDateString()}</TableCell>
-                                <TableCell className="font-mono text-sm">{order.orderNumber}</TableCell>
-                                <TableCell>{sellerItems.length} item{sellerItems.length !== 1 ? 's' : ''}</TableCell>
-                                <TableCell className="font-medium">€{sellerEarnings.toFixed(2)}</TableCell>
-                                <TableCell>
-                                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                    order.status === "COMPLETED" 
-                                      ? "bg-green-100 text-green-800" 
-                                      : order.status === "RESERVED"
-                                      ? "bg-blue-100 text-blue-800"
-                                      : "bg-gray-100 text-gray-800"
-                                  }`}>
-                                    {order.status.replace('_', ' ')}
-                                  </span>
-                                </TableCell>
-                              </TableRow>
-                            );
-                          })}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  ) : (
-                    <EmptyState 
-                      icon={<DollarSign className="h-8 w-8" />} 
-                      title="No transactions yet" 
-                      description="Your sales will appear here once customers purchase your items" 
-                    />
-                  )}
-                </div>
-              </>
             )}
           </TabsContent>
         </Tabs>

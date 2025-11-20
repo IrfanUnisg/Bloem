@@ -21,15 +21,26 @@ serve(async (req) => {
   }
 
   try {
+    // Create client with service role for item updates
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
       {
-        global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
-        },
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
       }
     )
+    
+    // Get and validate the user authentication from the request
+    const authHeader = req.headers.get('Authorization')
+    console.log('DEBUG: Auth header present:', !!authHeader)
+    
+    if (!authHeader) {
+      console.error('No authorization header in request')
+      throw new Error('No authorization header')
+    }
 
     const url = new URL(req.url)
     const method = req.method
@@ -75,8 +86,18 @@ serve(async (req) => {
         throw new Error('User ID and item IDs required')
       }
 
-      // Verify user is authenticated
-      const { data: { user }, error: authError } = await supabaseClient.auth.getUser()
+      // Verify user from Authorization header
+      const userClient = createClient(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+        {
+          global: {
+            headers: { Authorization: authHeader },
+          },
+        }
+      )
+      
+      const { data: { user }, error: authError } = await userClient.auth.getUser()
       if (authError) {
         console.error('AUTH ERROR:', authError)
         throw new Error(`Authentication failed: ${authError.message}`)

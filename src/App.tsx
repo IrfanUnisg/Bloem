@@ -6,6 +6,8 @@ import { HelmetProvider } from "react-helmet-async";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { CartProvider } from "./contexts/CartContext";
+import { ProtectedRoute } from "./components/auth/ProtectedRoute";
+import { RoleBasedRoute } from "./components/auth/RoleBasedRoute";
 import Index from "./pages/Index";
 import SignUp from "./pages/SignUp";
 import SignIn from "./pages/SignIn";
@@ -26,9 +28,9 @@ import Profile from "./pages/Profile";
 import StoreProfile from "./pages/StoreProfile";
 import StoreInventory from "./pages/store/StoreInventory";
 import StoreDropoffs from "./pages/store/StoreDropoffs";
+import AddStoreItem from "./pages/store/AddStoreItem";
 import StoreAnalytics from "./pages/store/StoreAnalytics";
 import StoreCheckout from "./pages/store/StoreCheckout";
-import StoreMarketing from "./pages/store/StoreMarketing";
 import AdminStores from "./pages/admin/AdminStores";
 import AdminSupport from "./pages/admin/AdminSupport";
 import AdminAnalytics from "./pages/admin/AdminAnalytics";
@@ -48,34 +50,42 @@ const App = () => (
             <Sonner />
             <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
               <Routes>
+                {/* Public routes */}
                 <Route path="/" element={<Index />} />
                 <Route path="/sign-up" element={<SignUp />} />
                 <Route path="/sign-in" element={<SignIn />} />
                 <Route path="/about" element={<About />} />
                 <Route path="/contact" element={<Contact />} />
                 <Route path="/faq" element={<FAQ />} />
-                <Route path="/browse" element={<Browse />} />
-                <Route path="/browse-stores" element={<BrowseStores />} />
-                <Route path="/browse/:id" element={<ItemDetail />} />
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/upload" element={<Upload />} />
-                <Route path="/cart" element={<Cart />} />
-                <Route path="/checkout" element={<Checkout />} />
-                <Route path="/orders" element={<Orders />} />
-                <Route path="/order-confirmation" element={<OrderConfirmation />} />
-                <Route path="/wishlist" element={<Wishlist />} />
-                <Route path="/profile" element={<Profile />} />
-                <Route path="/store-profile" element={<StoreProfile />} />
-                <Route path="/store/inventory" element={<StoreInventory />} />
-                <Route path="/store/dropoffs" element={<StoreDropoffs />} />
-                <Route path="/store/analytics" element={<StoreAnalytics />} />
-                <Route path="/store/checkout" element={<StoreCheckout />} />
-                <Route path="/store/marketing" element={<StoreMarketing />} />
-                <Route path="/admin/stores" element={<AdminStores />} />
-                <Route path="/admin/support" element={<AdminSupport />} />
-                <Route path="/admin/analytics" element={<AdminAnalytics />} />
-                <Route path="/admin/profile" element={<AdminProfile />} />
                 <Route path="/terms" element={<Terms />} />
+                <Route path="/browse-stores" element={<BrowseStores />} />
+                
+                {/* Protected routes - require authentication */}
+                <Route path="/browse" element={<ProtectedRoute><Browse /></ProtectedRoute>} />
+                <Route path="/browse/:id" element={<ProtectedRoute><ItemDetail /></ProtectedRoute>} />
+                <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                <Route path="/upload" element={<ProtectedRoute><Upload /></ProtectedRoute>} />
+                <Route path="/cart" element={<ProtectedRoute><Cart /></ProtectedRoute>} />
+                <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
+                <Route path="/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
+                <Route path="/order-confirmation" element={<ProtectedRoute><OrderConfirmation /></ProtectedRoute>} />
+                <Route path="/wishlist" element={<ProtectedRoute><Wishlist /></ProtectedRoute>} />
+                <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+                
+                {/* Store routes - require store role */}
+                <Route path="/store-profile" element={<RoleBasedRoute allowedRoles={["store"]}><StoreProfile /></RoleBasedRoute>} />
+                <Route path="/store/inventory" element={<RoleBasedRoute allowedRoles={["store"]}><StoreInventory /></RoleBasedRoute>} />
+                <Route path="/store/dropoffs" element={<RoleBasedRoute allowedRoles={["store"]}><StoreDropoffs /></RoleBasedRoute>} />
+                <Route path="/store/add-item" element={<RoleBasedRoute allowedRoles={["store"]}><AddStoreItem /></RoleBasedRoute>} />
+                <Route path="/store/analytics" element={<RoleBasedRoute allowedRoles={["store"]}><StoreAnalytics /></RoleBasedRoute>} />
+                <Route path="/store/checkout" element={<RoleBasedRoute allowedRoles={["store"]}><StoreCheckout /></RoleBasedRoute>} />
+                
+                {/* Admin routes - require admin role */}
+                <Route path="/admin/stores" element={<RoleBasedRoute allowedRoles={["admin"]}><AdminStores /></RoleBasedRoute>} />
+                <Route path="/admin/support" element={<RoleBasedRoute allowedRoles={["admin"]}><AdminSupport /></RoleBasedRoute>} />
+                <Route path="/admin/analytics" element={<RoleBasedRoute allowedRoles={["admin"]}><AdminAnalytics /></RoleBasedRoute>} />
+                <Route path="/admin/profile" element={<RoleBasedRoute allowedRoles={["admin"]}><AdminProfile /></RoleBasedRoute>} />
+                
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>

@@ -87,17 +87,39 @@ export interface Item {
   condition: ItemCondition;
   price: number;
   images: string[];
-  qrCode: string;
+  qr_code: string; // matches DB column name
   status: ItemStatus;
-  isConsignment: boolean;
-  hangerFee: number;
+  is_consignment: boolean; // matches DB column name
+  hanger_fee: number; // matches DB column name
+  seller_id?: string; // matches DB column name
+  store_id: string; // matches DB column name
+  uploaded_at: Date; // matches DB column name
+  listed_at?: Date; // matches DB column name
+  sold_at?: Date; // matches DB column name
+  created_at: Date; // matches DB column name
+  updated_at: Date; // matches DB column name
+  
+  // Deprecated camelCase aliases for backward compatibility
+  /** @deprecated Use qr_code instead */
+  qrCode?: string;
+  /** @deprecated Use is_consignment instead */
+  isConsignment?: boolean;
+  /** @deprecated Use hanger_fee instead */
+  hangerFee?: number;
+  /** @deprecated Use seller_id instead */
   sellerId?: string;
-  storeId: string;
-  uploadedAt: Date;
+  /** @deprecated Use store_id instead */
+  storeId?: string;
+  /** @deprecated Use uploaded_at instead */
+  uploadedAt?: Date;
+  /** @deprecated Use listed_at instead */
   listedAt?: Date;
+  /** @deprecated Use sold_at instead */
   soldAt?: Date;
-  createdAt: Date;
-  updatedAt: Date;
+  /** @deprecated Use created_at instead */
+  createdAt?: Date;
+  /** @deprecated Use updated_at instead */
+  updatedAt?: Date;
 }
 
 export interface ItemWithRelations extends Item {

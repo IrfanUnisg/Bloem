@@ -4,6 +4,7 @@
  */
 
 import { supabase } from '@/lib/supabase';
+import { EDGE_FUNCTIONS } from '@/lib/edge-functions';
 
 export interface UserProfile {
   id: string;
@@ -164,14 +165,22 @@ export const userProfileService = {
    */
   async deleteAccount(userId: string): Promise<boolean> {
     try {
-      const { error } = await supabase
-        .from('users')
-        .delete()
-        .eq('id', userId);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('Not authenticated');
+      }
 
-      if (error) {
-        console.error('Error deleting account:', error);
-        return false;
+      const response = await fetch(EDGE_FUNCTIONS.DELETE_ACCOUNT, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to delete account');
       }
 
       return true;
