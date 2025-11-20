@@ -118,7 +118,7 @@ const Orders = () => {
                       </h3>
                       <p className="text-sm text-muted-foreground flex items-center gap-1">
                         <Calendar className="h-3 w-3" />
-                        {order.createdAt
+                        Purchase Date: {order.createdAt
                           ? format(new Date(order.createdAt), "MMM dd, yyyy")
                           : "N/A"}
                       </p>

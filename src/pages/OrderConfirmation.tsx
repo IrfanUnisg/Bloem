@@ -167,7 +167,7 @@ const OrderConfirmation = () => {
           </div>
           <h1 className="text-3xl font-bold text-foreground mb-2">Payment Successful!</h1>
           <p className="text-muted-foreground">
-            Order #{order.orderNumber} has been confirmed
+            Order #{order.orderNumber || order.id.slice(0, 8)} has been confirmed
           </p>
         </div>
 
@@ -186,12 +186,14 @@ const OrderConfirmation = () => {
               <div>
                 <p className="text-sm font-medium text-foreground">Order Date</p>
                 <p className="text-sm text-muted-foreground">
-                  {new Date(order.createdAt).toLocaleDateString('en-US', {
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                  })}
+                  {order.createdAt
+                    ? new Date(order.createdAt).toLocaleDateString('en-US', {
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                      })
+                    : 'N/A'}
                 </p>
               </div>
             </div>
@@ -200,8 +202,10 @@ const OrderConfirmation = () => {
               <MapPin className="h-5 w-5 text-muted-foreground mt-0.5" />
               <div>
                 <p className="text-sm font-medium text-foreground">Pickup Location</p>
-                <p className="text-sm text-muted-foreground">{order.store?.name}</p>
-                <p className="text-xs text-muted-foreground">{order.store?.address}</p>
+                <p className="text-sm text-muted-foreground">{order.store?.name || 'Store information unavailable'}</p>
+                {order.store?.address && (
+                  <p className="text-xs text-muted-foreground">{order.store.address}</p>
+                )}
               </div>
             </div>
           </div>
