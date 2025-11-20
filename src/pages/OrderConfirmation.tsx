@@ -288,7 +288,7 @@ const OrderConfirmation = () => {
           <Button
             variant="outline"
             className="flex-1"
-            onClick={() => navigate("/dashboard")}
+            onClick={() => navigate("/orders")}
           >
             View My Orders
           </Button>
