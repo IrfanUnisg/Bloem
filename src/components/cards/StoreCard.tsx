@@ -16,10 +16,12 @@ export function StoreCard({
   image
 }: StoreCardProps) {
   return <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
-      {/* Image */}
-      <div className="relative aspect-[3/2] bg-muted overflow-hidden">
-        {image && <img src={image} alt={name} className="w-full h-full object-cover" />}
-      </div>
+      {/* Image (only if provided) */}
+      {image && (
+        <div className="relative aspect-[3/2] bg-muted overflow-hidden">
+          <img src={image} alt={name} className="w-full h-full object-cover" />
+        </div>
+      )}
 
       {/* Content */}
       <div className="p-4">
