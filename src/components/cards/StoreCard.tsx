@@ -19,7 +19,15 @@ export function StoreCard({
       {/* Image (only if provided) */}
       {image && (
         <div className="relative aspect-[3/2] bg-muted overflow-hidden">
-          <img src={image} alt={name} className="w-full h-full object-cover" />
+          <img
+            src={image}
+            alt={name}
+            className="w-full h-full object-cover"
+            onError={e => {
+              // Hide image if it fails to load
+              e.currentTarget.style.display = 'none';
+            }}
+          />
         </div>
       )}
 
