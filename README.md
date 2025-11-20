@@ -2,7 +2,12 @@
 
 A modern, production-ready e-commerce platform for buying and selling thrifted items. Built with React 18, TypeScript, Vite, Supabase, Stripe, and Tailwind CSS.
 
-**Author:** @IrfanUnisg  
+**Authors:**  
+- @IrfanUnisg (Irfan Kujovic)
+- @jfischer293 (Jorn Fischer)
+- @jtou3 (Jan Toullec-Lugert)
+- @sophunisg (Sophia Haas)
+
 **Repository:** [github.com/IrfanUnisg/Bloem](https://github.com/IrfanUnisg/Bloem)  
 **Status:** Production-Ready (Cleaned & Verified - November 2025)
 
@@ -27,16 +32,17 @@ A modern, production-ready e-commerce platform for buying and selling thrifted i
 ## Project Overview
 
 Bloem is a full-featured online thrift marketplace where users can:
-- **Browse** secondhand items by category, size, and condition
+- **Browse** secondhand items by category, size, condition, and price
 - **List items** for sale with photos and QR codes
 - **Shop** with secure Stripe payment processing
-- **Manage inventory** with real-time status tracking
+- **Manage inventory** with real-time status tracking 
 - **Track orders** with buyer and seller dashboards
-- **Manage wishlists** for future purchases
+- **Save favorites** with wishlist functionality
 
-The platform supports two user roles:
+The platform supports three user roles:
 - **Buyers/Sellers** - Individual users who can buy and list items
-- **Store Owners** - Businesses that operate multi-item stores with approval workflows
+- **Store Owners** - Businesses that operate physical thrift stores with inventory management
+- **Admins** - Platform administrators who manage store applications and oversee operations
 
 ---
 
@@ -75,43 +81,45 @@ The platform supports two user roles:
 ## Features
 
 ### Core Marketplace Features
-- ✅ **Browse Items** - Filter by category, size, condition, price, and search
-- ✅ **Item Detail Pages** - Image galleries, QR codes, seller information, reviews
-- ✅ **Shopping Cart** - Real-time cart sync across devices
-- ✅ **Secure Checkout** - Stripe payment processing with multiple payment methods
-- ✅ **Order Confirmation** - Automatic confirmations and tracking emails
-- ✅ **Order History** - Full purchase history with status tracking
+- ✅ **Browse Items** - Filter by category, size, condition, price range with search functionality
+- ✅ **Item Detail Pages** - Image galleries, QR codes, seller information, item specifications
+- ✅ **Shopping Cart** - Real-time cart sync with persistent storage
+- ✅ **Secure Checkout** - Stripe payment processing with Payment Element integration
+- ✅ **Order Confirmation** - Automatic order creation and confirmation pages
+- ✅ **Order History** - Full purchase history with status tracking for buyers and sellers
 
 ### Seller/Inventory Management
-- ✅ **Item Upload** - List items with photos, descriptions, pricing, and inventory status
-- ✅ **Inventory Tracking** - Real-time status: FOR_SALE, RESERVED, SOLD, REMOVED
-- ✅ **Sales Dashboard** - View sales, earnings, and inventory at a glance
-- ✅ **Order Fulfillment** - Manage buyer orders and shipping
-- ✅ **Sales Analytics** - Revenue tracking and performance metrics (charts powered by Recharts)
-- ✅ **Store Profile** - Customizable seller profile and settings
+- ✅ **Item Upload** - Multi-step item listing form with photo uploads, descriptions, pricing, and dropoff location selection
+- ✅ **Inventory Tracking** - Real-time status management
+- ✅ **Sales Dashboard** - View items by status, manage inventory, track sales
+- ✅ **Order Fulfillment** - Manage buyer orders as a seller
 
-### Store Management (Multi-Store Support)
-- ✅ **Store Creation** - Business users can create and manage thrift stores
-- ✅ **Store Approval Workflow** - Admin approval system for store applications
-- ✅ **Store Browsing** - Directory of all active stores
-- ✅ **Store Profile Pages** - Public store information and inventory
-- ✅ **Store Analytics** - Monthly sales statistics and performance tracking
-- ✅ **Store Settings** - Dropoff point management and configuration
+### Store Management (Physical Store Operations)
+- ✅ **Store Registration** - Store owners can apply to operate physical thrift locations
+- ✅ **Store Approval Workflow** - Admin review and approval system for new store applications
+- ✅ **Store Directory** - Public browsing of all active, verified stores
+- ✅ **Store Profile Pages** - Detailed store information with location, hours, and contact details
+- ✅ **Store Inventory Management** - Manage both store-owned items and consignment pieces
+- ✅ **Dropoff Management** - Review and approve customer item dropoffs
+- ✅ **In-Store Checkout** - QR code scanning system for processing physical store purchases
+- ✅ **Store Analytics** - Monthly sales statistics, revenue tracking, inventory breakdown, and category analysis
 
 ### User Features
-- ✅ **Authentication** - Secure Supabase Auth with email/password and OAuth options
-- ✅ **User Profiles** - Profile customization with avatar uploads
-- ✅ **Wishlist** - Save favorite items for later
-- ✅ **Order History** - Track all past purchases
-- ✅ **Contact Form** - Customer inquiries and feedback
-- ✅ **Responsive Design** - Mobile-optimized experience
+- ✅ **Authentication** - Secure Supabase Auth with email/password (no OAuth implemented)
+- ✅ **User Profiles** - Profile customization with personal info, sizing preferences, and bank account details
+- ✅ **Wishlist** - Save favorite items for later with add/remove functionality
+- ✅ **Order History** - Track all past purchases with order details
+- ✅ **Contact Form** - Customer inquiries and feedback submission
+- ✅ **Change Password** - Secure password update functionality
+- ✅ **Account Deletion** - Users can permanently delete their accounts
+- ✅ **Responsive Design** - Fully mobile-optimized experience with mobile filter drawer and cart button
 
 ### Admin Features
-- ✅ **Store Application Management** - Approve or reject store applications
-- ✅ **Platform Analytics** - System-wide statistics and monitoring
-- ✅ **User Management** - View and manage platform users
-- ✅ **Store Management** - Manage all active stores
-- ✅ **Admin Dashboard** - Centralized admin control panel
+- ✅ **Store Application Management** - Review, approve, or reject store applications
+- ✅ **Platform Analytics** - System-wide statistics including users, active items, stores, and monthly metrics
+- ✅ **Store Management** - View and manage all platform stores with status filtering
+- ✅ **Support Inbox** - Manage customer contact form submissions
+- ✅ **Admin Dashboard** - Centralized admin control panel with key metrics
 
 ---
 
@@ -434,7 +442,7 @@ npm run build
 
 ---
 
-## Project Status (Cleanup Report)
+### Project Status (Cleanup Report)
 
 ### November 2025 Cleanup
 - ✅ Removed all commented-out code and temporary TODOs
@@ -447,14 +455,23 @@ npm run build
 **Known Limitations:**
 - Chunk size warning (not blocking, expected for full marketplace)
 - ESLint warnings in auto-generated Prisma types (by design, excluded)
+- OAuth authentication not implemented (only email/password)
+- Reviews/ratings system not implemented
+- Avatar uploads not implemented (text-based profiles only)
 
 ---
 
 ## License
 
-This project is proprietary. All rights reserved to @IrfanUnisg.
+This project is proprietary. All rights reserved.
 
-For inquiries or licensing information, contact the project owner.
+**Contributors:**
+- Irfan Kujovic (@IrfanUnisg)
+- Jorn Fischer (@jfischer293)
+- Jan Toullec-Lugert (@jtou3)
+- Sophia Haas (@sophunisg)
+
+For inquiries or licensing information, contact the project owners.
 
 ---
 
