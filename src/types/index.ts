@@ -131,7 +131,7 @@ export interface ItemWithRelations extends Item {
 // ORDER & TRANSACTION TYPES
 // ========================================
 
-export type OrderStatus = 'RESERVED' | 'COMPLETED' | 'CANCELLED';
+export type OrderStatus = 'PENDING' | 'COMPLETED' | 'CANCELLED';
 export type PickupMethod = 'IN_STORE' | 'RESERVED';
 export type PaymentMethod = 'CASH' | 'CARD' | 'MOBILE';
 

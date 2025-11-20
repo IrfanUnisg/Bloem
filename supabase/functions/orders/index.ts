@@ -15,6 +15,36 @@ function generateOrderNumber(): string {
   return `BLM-${timestamp}-${random}`
 }
 
+// Map database snake_case to frontend camelCase
+function mapOrderFields(order: any): any {
+  if (!order) return null
+  
+  return {
+    ...order,
+    orderNumber: order.order_number || order.orderNumber,
+    createdAt: order.created_at || order.createdAt,
+    updatedAt: order.updated_at || order.updatedAt,
+    completedAt: order.completed_at || order.completedAt,
+    pickupMethod: order.pickup_method || order.pickupMethod,
+    serviceFee: order.service_fee ?? order.serviceFee,
+    paymentIntentId: order.payment_intent_id || order.paymentIntentId,
+    paymentMethod: order.payment_method || order.paymentMethod,
+    buyerId: order.buyer_id || order.buyerId,
+    storeId: order.store_id || order.storeId,
+    // Map nested items
+    items: order.items?.map((oi: any) => ({
+      ...oi,
+      orderId: oi.order_id || oi.orderId,
+      itemId: oi.item_id || oi.itemId,
+      priceAtPurchase: oi.price_at_purchase ?? oi.priceAtPurchase,
+      sellerPayout: oi.seller_payout ?? oi.sellerPayout,
+      storeCommission: oi.store_commission ?? oi.storeCommission,
+      platformFee: oi.platform_fee ?? oi.platformFee,
+      createdAt: oi.created_at || oi.createdAt,
+    })) || order.items,
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -71,7 +101,10 @@ serve(async (req) => {
 
       if (error) throw error
 
-      return new Response(JSON.stringify({ orders }), {
+      // Map snake_case fields to camelCase for frontend
+      const mappedOrders = orders?.map(mapOrderFields) || []
+
+      return new Response(JSON.stringify({ orders: mappedOrders }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
       })
@@ -162,12 +195,12 @@ serve(async (req) => {
         const store = storeItemsArray[0].store
         const commissionRate = store.commissionRate || 0.20
 
-        // Create order for this store
+        // Create order with PENDING status (awaiting payment)
         const { data: order, error: orderError } = await supabaseClient
           .from('orders')
           .insert({
             order_number: generateOrderNumber(),
-            status: 'RESERVED',
+            status: 'PENDING',
             pickup_method: 'IN_STORE',
             subtotal,
             service_fee: serviceFee,
@@ -182,7 +215,7 @@ serve(async (req) => {
 
         if (orderError) throw orderError
 
-        // Create order items and update item statuses
+        // Create order items but DON'T change item status (items stay FOR_SALE until payment)
         for (const item of storeItemsArray) {
           const priceAtPurchase = item.price
           const platformFee = priceAtPurchase * platformFeeRate
@@ -202,11 +235,7 @@ serve(async (req) => {
             created_at: new Date().toISOString(),
           })
 
-          // Update item status to RESERVED
-          await supabaseClient
-            .from('items')
-            .update({ status: 'RESERVED', updated_at: new Date().toISOString() })
-            .eq('id', item.id)
+          // DO NOT update item status - items remain FOR_SALE until payment succeeds
 
           // Create transaction record if consignment
           if (item.is_consignment && item.seller_id) {
@@ -244,9 +273,12 @@ serve(async (req) => {
         `)
         .in('id', createdOrders.map(o => o.id))
 
+      // Map snake_case fields to camelCase for frontend
+      const mappedOrders = completeOrders?.map(mapOrderFields) || []
+
       // Return the first order for backward compatibility (frontend expects single order)
       // In the future, this can be updated to handle multiple orders
-      return new Response(JSON.stringify({ order: completeOrders?.[0], orders: completeOrders }), {
+      return new Response(JSON.stringify({ order: mappedOrders[0], orders: mappedOrders }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 201,
       })

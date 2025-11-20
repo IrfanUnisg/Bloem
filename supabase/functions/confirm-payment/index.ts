@@ -9,6 +9,36 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
+// Map database snake_case to frontend camelCase
+function mapOrderFields(order: any): any {
+  if (!order) return null
+  
+  return {
+    ...order,
+    orderNumber: order.order_number || order.orderNumber,
+    createdAt: order.created_at || order.createdAt,
+    updatedAt: order.updated_at || order.updatedAt,
+    completedAt: order.completed_at || order.completedAt,
+    pickupMethod: order.pickup_method || order.pickupMethod,
+    serviceFee: order.service_fee ?? order.serviceFee,
+    paymentIntentId: order.payment_intent_id || order.paymentIntentId,
+    paymentMethod: order.payment_method || order.paymentMethod,
+    buyerId: order.buyer_id || order.buyerId,
+    storeId: order.store_id || order.storeId,
+    // Map nested items
+    items: order.items?.map((oi: any) => ({
+      ...oi,
+      orderId: oi.order_id || oi.orderId,
+      itemId: oi.item_id || oi.itemId,
+      priceAtPurchase: oi.price_at_purchase ?? oi.priceAtPurchase,
+      sellerPayout: oi.seller_payout ?? oi.sellerPayout,
+      storeCommission: oi.store_commission ?? oi.storeCommission,
+      platformFee: oi.platform_fee ?? oi.platformFee,
+      createdAt: oi.created_at || oi.createdAt,
+    })) || order.items,
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -65,13 +95,32 @@ serve(async (req) => {
         .eq('user_id', order.buyer_id)
         .in('item_id', itemIds)
       
+      const mappedOrder = mapOrderFields(order)
+      
       return new Response(
-        JSON.stringify({ order, message: 'Order already completed' }),
+        JSON.stringify({ order: mappedOrder, message: 'Order already completed' }),
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 200,
         }
       )
+    }
+
+    const itemIds = order.items.map((oi) => oi.item_id)
+
+    // Update items to SOLD status (payment succeeded)
+    const { error: itemsUpdateError } = await supabaseClient
+      .from('items')
+      .update({
+        status: 'SOLD',
+        sold_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .in('id', itemIds)
+
+    if (itemsUpdateError) {
+      console.error('Failed to update item status:', itemsUpdateError)
+      throw new Error('Failed to mark items as sold. Please contact support.')
     }
 
     // Update order status to COMPLETED
@@ -90,22 +139,6 @@ serve(async (req) => {
     if (updateError) {
       console.error('Failed to update order status:', updateError)
       throw new Error('Failed to complete order. Please contact support.')
-    }
-
-    // Update items to SOLD status
-    const itemIds = order.items.map((oi) => oi.item_id)
-    const { error: itemsUpdateError } = await supabaseClient
-      .from('items')
-      .update({
-        status: 'SOLD',
-        sold_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      })
-      .in('id', itemIds)
-
-    if (itemsUpdateError) {
-      console.error('Failed to update item status:', itemsUpdateError)
-      // Don't throw here - order is already completed, just log the error
     }
 
     // Clear cart items ONLY after successful payment and order completion
@@ -152,9 +185,11 @@ serve(async (req) => {
 
     console.log(`Order ${order.order_number} completed successfully`)
 
+    const mappedOrder = mapOrderFields(updatedOrder)
+
     return new Response(
       JSON.stringify({
-        order: updatedOrder,
+        order: mappedOrder,
         message: 'Payment confirmed and order completed',
       }),
       {

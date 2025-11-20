@@ -33,7 +33,9 @@ const Orders = () => {
     setIsLoading(true);
     try {
       const userOrders = await orderService.getOrdersByBuyer(user.id);
-      setOrders(userOrders);
+      // Filter out PENDING orders (payment not completed yet)
+      const completedOrders = userOrders.filter(order => order.status !== 'PENDING');
+      setOrders(completedOrders);
     } catch (error: any) {
       console.error("Error fetching orders:", error);
       toast({
@@ -50,8 +52,8 @@ const Orders = () => {
     switch (status) {
       case "COMPLETED":
         return "bg-green-500/10 text-green-700 dark:text-green-400";
-      case "RESERVED":
-        return "bg-blue-500/10 text-blue-700 dark:text-blue-400";
+      case "PENDING":
+        return "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400";
       case "CANCELLED":
         return "bg-red-500/10 text-red-700 dark:text-red-400";
       default:
@@ -63,8 +65,8 @@ const Orders = () => {
     switch (status) {
       case "COMPLETED":
         return "Completed";
-      case "RESERVED":
-        return "Ready for Pickup";
+      case "PENDING":
+        return "Payment Pending";
       case "CANCELLED":
         return "Cancelled";
       default:
@@ -116,8 +118,8 @@ const Orders = () => {
                       </h3>
                       <p className="text-sm text-muted-foreground flex items-center gap-1">
                         <Calendar className="h-3 w-3" />
-                        {order.createdAt || (order as any).created_at 
-                          ? format(new Date(order.createdAt || (order as any).created_at), "MMM dd, yyyy")
+                        {order.createdAt
+                          ? format(new Date(order.createdAt), "MMM dd, yyyy")
                           : "N/A"}
                       </p>
                     </div>
@@ -199,19 +201,7 @@ const Orders = () => {
                   </div>
                 </div>
 
-                {/* Actions */}
-                {order.status === "RESERVED" && (
-                  <div className="mt-4 pt-4 border-t">
-                    <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
-                      <p className="text-sm font-medium text-blue-700 dark:text-blue-400 mb-2">
-                        Ready for Pickup
-                      </p>
-                      <p className="text-xs text-blue-600 dark:text-blue-300">
-                        Your items are ready! Visit {order.store?.name} to collect your order.
-                      </p>
-                    </div>
-                  </div>
-                )}
+                {/* Completed orders - items already sold */}
               </Card>
             ))}
           </div>
