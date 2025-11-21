@@ -31,7 +31,7 @@ A modern, production-ready e-commerce platform for buying and selling thrifted i
 
 ## Project Overview
 
-Bloem is a full-featured online thrift marketplace where users can:
+bloem is a full-featured online thrift marketplace where users can:
 - **Browse** secondhand items by category, size, condition, and price
 - **List items** for sale with photos and QR codes
 - **Shop** with secure Stripe payment processing
