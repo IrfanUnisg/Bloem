@@ -16,19 +16,8 @@ export function StoreCard({
   image
 }: StoreCardProps) {
   return <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
-      {/* Image (only if provided) */}
-      <div className="relative aspect-[3/2] bg-muted overflow-hidden">
-        {image ? (
-          <img src={image} alt={name} className="w-full h-full object-cover" />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-            Store Image
-          </div>
-        )}
-      </div>
-
       {/* Content */}
-      <div className="p-4">
+      <div className="p-6">
         <h3 className="font-semibold text-foreground mb-2">{name}</h3>
         
         <div className="space-y-2 text-sm text-muted-foreground mb-4">
