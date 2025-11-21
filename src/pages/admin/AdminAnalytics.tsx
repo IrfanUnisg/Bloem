@@ -1,12 +1,15 @@
 import { useState, useEffect } from "react";
+import { Helmet } from "react-helmet-async";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, Store, TrendingUp, Euro, Package, Clock, Loader2 } from "lucide-react";
 import { adminService } from "@/services/admin.service";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
+import { pageMetadata } from "@/lib/seo";
 
 const AdminAnalytics = () => {
+  const meta = pageMetadata.adminAnalytics();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
@@ -72,6 +75,12 @@ const AdminAnalytics = () => {
 
   return (
     <AdminLayout>
+      <Helmet>
+        <title>{meta.title}</title>
+        <meta name="description" content={meta.description} />
+        <meta name="robots" content={meta.robots} />
+        <link rel="canonical" href={meta.canonicalUrl} />
+      </Helmet>
       <div className="py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <div className="mb-8">

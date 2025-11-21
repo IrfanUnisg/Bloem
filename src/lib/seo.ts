@@ -232,4 +232,145 @@ export const pageMetadata = {
       canonicalUrl: `${BASE_URL}/404`,
       robots: "noindex,follow",
     }),
+
+  cart: (): SEOMetadata =>
+    generateMetadata({
+      title: "Cart — Bloem",
+      description: "Review your cart and checkout.",
+      canonicalUrl: `${BASE_URL}/cart`,
+      robots: "noindex,follow",
+    }),
+
+  checkout: (): SEOMetadata =>
+    generateMetadata({
+      title: "Checkout — Bloem",
+      description: "Complete your purchase securely.",
+      canonicalUrl: `${BASE_URL}/checkout`,
+      robots: "noindex,follow",
+    }),
+
+  wishlist: (): SEOMetadata =>
+    generateMetadata({
+      title: "Wishlist — Bloem",
+      description: "View your saved items.",
+      canonicalUrl: `${BASE_URL}/wishlist`,
+      robots: "noindex,follow",
+    }),
+
+  orders: (): SEOMetadata =>
+    generateMetadata({
+      title: "Orders — Bloem",
+      description: "View and manage your orders.",
+      canonicalUrl: `${BASE_URL}/orders`,
+      robots: "noindex,follow",
+    }),
+
+  profile: (): SEOMetadata =>
+    generateMetadata({
+      title: "Profile — Bloem",
+      description: "Manage your Bloem profile.",
+      canonicalUrl: `${BASE_URL}/profile`,
+      robots: "noindex,follow",
+    }),
+
+  upload: (): SEOMetadata =>
+    generateMetadata({
+      title: "Upload Item — Bloem",
+      description: "Upload a new item to sell on Bloem.",
+      canonicalUrl: `${BASE_URL}/upload`,
+      robots: "noindex,follow",
+    }),
+
+  storeProfile: (storeName?: string): SEOMetadata =>
+    generateMetadata({
+      title: storeName
+        ? `${storeName} — Bloem Thrift Store`
+        : "Store Profile — Bloem",
+      description: storeName
+        ? `Explore sustainable fashion from ${storeName} on Bloem.`
+        : "Discover unique second-hand items from this thrift store.",
+      canonicalUrl: `${BASE_URL}/store`,
+    }),
+
+  orderConfirmation: (): SEOMetadata =>
+    generateMetadata({
+      title: "Order Confirmed — Bloem",
+      description: "Your order has been confirmed.",
+      canonicalUrl: `${BASE_URL}/order-confirmation`,
+      robots: "noindex,follow",
+    }),
+
+  // Store Pages
+  storeInventory: (): SEOMetadata =>
+    generateMetadata({
+      title: "Inventory — Bloem Store",
+      description: "Manage your store inventory.",
+      canonicalUrl: `${BASE_URL}/store/inventory`,
+      robots: "noindex,follow",
+    }),
+
+  storeAnalytics: (): SEOMetadata =>
+    generateMetadata({
+      title: "Analytics — Bloem Store",
+      description: "View your store analytics and insights.",
+      canonicalUrl: `${BASE_URL}/store/analytics`,
+      robots: "noindex,follow",
+    }),
+
+  storeDropoffs: (): SEOMetadata =>
+    generateMetadata({
+      title: "Drop-offs — Bloem Store",
+      description: "Manage customer drop-offs and consignment items.",
+      canonicalUrl: `${BASE_URL}/store/dropoffs`,
+      robots: "noindex,follow",
+    }),
+
+  storeCheckout: (): SEOMetadata =>
+    generateMetadata({
+      title: "Store Checkout — Bloem",
+      description: "Process in-store checkout.",
+      canonicalUrl: `${BASE_URL}/store/checkout`,
+      robots: "noindex,follow",
+    }),
+
+  addStoreItem: (): SEOMetadata =>
+    generateMetadata({
+      title: "Add Item — Bloem Store",
+      description: "Add a new item to your store inventory.",
+      canonicalUrl: `${BASE_URL}/store/add-item`,
+      robots: "noindex,follow",
+    }),
+
+  // Admin Pages
+  adminStores: (): SEOMetadata =>
+    generateMetadata({
+      title: "Manage Stores — Bloem Admin",
+      description: "Manage all stores on the platform.",
+      canonicalUrl: `${BASE_URL}/admin/stores`,
+      robots: "noindex,follow",
+    }),
+
+  adminSupport: (): SEOMetadata =>
+    generateMetadata({
+      title: "Support — Bloem Admin",
+      description: "Manage customer support requests.",
+      canonicalUrl: `${BASE_URL}/admin/support`,
+      robots: "noindex,follow",
+    }),
+
+  adminAnalytics: (): SEOMetadata =>
+    generateMetadata({
+      title: "Analytics — Bloem Admin",
+      description: "View platform analytics and insights.",
+      canonicalUrl: `${BASE_URL}/admin/analytics`,
+      robots: "noindex,follow",
+    }),
+
+  adminProfile: (): SEOMetadata =>
+    generateMetadata({
+      title: "Admin Profile — Bloem",
+      description: "Manage your admin profile.",
+      canonicalUrl: `${BASE_URL}/admin/profile`,
+      robots: "noindex,follow",
+    }),
 };

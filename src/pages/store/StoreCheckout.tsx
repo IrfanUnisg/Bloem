@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Helmet } from "react-helmet-async";
 import { StoreLayout } from "@/components/layout/StoreLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,8 +12,10 @@ import { useAuth } from "@/contexts/AuthContext";
 import { storeService } from "@/services/store.service";
 import { itemService } from "@/services/item.service";
 import { ItemWithRelations } from "@/types";
+import { pageMetadata } from "@/lib/seo";
 
 const StoreCheckout = () => {
+  const meta = pageMetadata.storeCheckout();
   const { toast } = useToast();
   const { user } = useAuth();
   const [qrCode, setQrCode] = useState("");
@@ -144,6 +147,12 @@ const StoreCheckout = () => {
 
   return (
     <StoreLayout>
+      <Helmet>
+        <title>{meta.title}</title>
+        <meta name="description" content={meta.description} />
+        <meta name="robots" content={meta.robots} />
+        <link rel="canonical" href={meta.canonicalUrl} />
+      </Helmet>
       <div className="p-6 md:p-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-foreground mb-2">Checkout</h1>

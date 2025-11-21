@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,8 +14,10 @@ import { useToast } from "@/hooks/use-toast";
 import { CheckCircle, MapPin, Calendar, Package, Loader2, Download } from "lucide-react";
 import { EDGE_FUNCTIONS } from "@/lib/edge-functions";
 import { supabase } from "@/lib/supabase";
+import { pageMetadata } from "@/lib/seo";
 
 const OrderConfirmation = () => {
+  const meta = pageMetadata.orderConfirmation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
@@ -141,6 +144,12 @@ const OrderConfirmation = () => {
 
   return (
     <DashboardLayout>
+      <Helmet>
+        <title>{meta.title}</title>
+        <meta name="description" content={meta.description} />
+        <meta name="robots" content={meta.robots} />
+        <link rel="canonical" href={meta.canonicalUrl} />
+      </Helmet>
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 max-w-4xl">
         {/* Success Header */}
         <div className="text-center mb-8">

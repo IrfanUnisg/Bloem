@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { EmptyState } from "@/components/placeholders/EmptyState";
 import { Card } from "@/components/ui/card";
@@ -10,8 +11,10 @@ import { useCart } from "@/contexts/CartContext";
 import { orderService } from "@/services/order.service";
 import { useToast } from "@/hooks/use-toast";
 import { ShoppingBag, Trash2, Loader2 } from "lucide-react";
+import { pageMetadata } from "@/lib/seo";
 
 const Cart = () => {
+  const meta = pageMetadata.cart();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { items, removeFromCart, isLoading, refreshCart } = useCart();
@@ -66,6 +69,12 @@ const Cart = () => {
 
   return (
     <DashboardLayout>
+      <Helmet>
+        <title>{meta.title}</title>
+        <meta name="description" content={meta.description} />
+        <meta name="robots" content={meta.robots} />
+        <link rel="canonical" href={meta.canonicalUrl} />
+      </Helmet>
       <div className="p-6 md:p-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-foreground mb-2">Shopping Cart</h1>

@@ -1,3 +1,4 @@
+import { Helmet } from "react-helmet-async";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,8 +13,10 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { ChangePasswordDialog } from "@/components/ChangePasswordDialog";
+import { pageMetadata } from "@/lib/seo";
 
 const AdminProfile = () => {
+  const meta = pageMetadata.adminProfile();
   const { toast } = useToast();
   const navigate = useNavigate();
   const { logout, user } = useAuth();
@@ -99,6 +102,12 @@ const AdminProfile = () => {
 
   return (
     <AdminLayout>
+      <Helmet>
+        <title>{meta.title}</title>
+        <meta name="description" content={meta.description} />
+        <meta name="robots" content={meta.robots} />
+        <link rel="canonical" href={meta.canonicalUrl} />
+      </Helmet>
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 max-w-4xl">
         <h1 className="text-3xl font-bold text-foreground mb-8">admin profile</h1>
 

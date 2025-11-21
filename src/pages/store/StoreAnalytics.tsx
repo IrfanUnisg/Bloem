@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Helmet } from "react-helmet-async";
 import { StoreLayout } from "@/components/layout/StoreLayout";
 import { StatCard } from "@/components/cards/StatCard";
 import { Card } from "@/components/ui/card";
@@ -8,8 +9,10 @@ import { useAuth } from "@/contexts/AuthContext";
 import { storeService } from "@/services/store.service";
 import { itemService } from "@/services/item.service";
 import { useToast } from "@/hooks/use-toast";
+import { pageMetadata } from "@/lib/seo";
 
 const StoreAnalytics = () => {
+  const meta = pageMetadata.storeAnalytics();
   const { user } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
@@ -104,6 +107,12 @@ const StoreAnalytics = () => {
 
   return (
     <StoreLayout>
+      <Helmet>
+        <title>{meta.title}</title>
+        <meta name="description" content={meta.description} />
+        <meta name="robots" content={meta.robots} />
+        <link rel="canonical" href={meta.canonicalUrl} />
+      </Helmet>
       <div className="p-6 md:p-8">
         <div className="flex items-center justify-between mb-8">
           <div>

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -12,8 +13,10 @@ import { OrderWithItems } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { ShoppingBag, Package, Loader2, Calendar, MapPin, Euro } from "lucide-react";
 import { format } from "date-fns";
+import { pageMetadata } from "@/lib/seo";
 
 const Orders = () => {
+  const meta = pageMetadata.orders();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
@@ -92,6 +95,12 @@ const Orders = () => {
 
   return (
     <DashboardLayout>
+      <Helmet>
+        <title>{meta.title}</title>
+        <meta name="description" content={meta.description} />
+        <meta name="robots" content={meta.robots} />
+        <link rel="canonical" href={meta.canonicalUrl} />
+      </Helmet>
       <div className="p-6 md:p-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-foreground mb-2">My Orders</h1>

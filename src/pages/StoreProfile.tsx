@@ -1,3 +1,4 @@
+import { Helmet } from "react-helmet-async";
 import { StoreLayout } from "@/components/layout/StoreLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,7 @@ import { storeService, StoreStats } from "@/services/store.service";
 import { supabase } from "@/lib/supabase";
 import type { Store as StoreType } from "@/services/store.service";
 import { ChangePasswordDialog } from "@/components/ChangePasswordDialog";
+import { pageMetadata } from "@/lib/seo";
 
 const StoreProfile = () => {
   const { toast } = useToast();
@@ -180,8 +182,16 @@ const StoreProfile = () => {
     }
   };
 
+  const meta = pageMetadata.storeProfile(store?.storeName);
+
   return (
     <StoreLayout>
+      <Helmet>
+        <title>{meta.title}</title>
+        <meta name="description" content={meta.description} />
+        <meta name="robots" content={meta.robots} />
+        <link rel="canonical" href={meta.canonicalUrl} />
+      </Helmet>
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 max-w-4xl">
         <h1 className="text-3xl font-bold text-foreground mb-8">store profile</h1>
 

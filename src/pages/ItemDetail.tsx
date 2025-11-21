@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { MobileCartButton } from "@/components/MobileCartButton";
@@ -13,6 +14,7 @@ import { wishlistService } from "@/services/wishlist.service";
 import { ItemWithRelations } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, MapPin, Clock, Heart, ShoppingBag, Loader2 } from "lucide-react";
+import { pageMetadata } from "@/lib/seo";
 
 const ItemDetail = () => {
   const { id } = useParams();
@@ -198,9 +200,16 @@ const ItemDetail = () => {
 
   const isAvailable = item.status === "FOR_SALE";
   const store = item.store;
+  const meta = pageMetadata.itemDetail(item.name, store?.storeName);
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      <Helmet>
+        <title>{meta.title}</title>
+        <meta name="description" content={meta.description} />
+        <meta name="robots" content={meta.robots} />
+        <link rel="canonical" href={meta.canonicalUrl} />
+      </Helmet>
       <Header variant={user ? "authenticated" : "public"} />
       
       <main className="flex-1 py-12 px-4 sm:px-6 lg:px-8">

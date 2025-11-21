@@ -1,3 +1,4 @@
+import { Helmet } from "react-helmet-async";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,8 +9,10 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { wishlistService, WishlistItem } from "@/services/wishlist.service";
 import { cartService } from "@/services/cart.service";
+import { pageMetadata } from "@/lib/seo";
 
 const Wishlist = () => {
+  const meta = pageMetadata.wishlist();
   const { toast } = useToast();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -116,6 +119,12 @@ const Wishlist = () => {
 
   return (
     <DashboardLayout>
+      <Helmet>
+        <title>{meta.title}</title>
+        <meta name="description" content={meta.description} />
+        <meta name="robots" content={meta.robots} />
+        <link rel="canonical" href={meta.canonicalUrl} />
+      </Helmet>
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex items-center gap-3 mb-8">
           <Heart className="h-8 w-8 text-primary" />

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Helmet } from "react-helmet-async";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { ItemCard } from "@/components/cards/ItemCard";
 import { EmptyState } from "@/components/placeholders/EmptyState";
@@ -14,10 +15,12 @@ import { supabase } from "@/lib/supabase";
 import { ItemWithRelations, OrderWithItems } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { Upload, Package } from "lucide-react";
+import { pageMetadata } from "@/lib/seo";
 
 type ItemStatus = "all" | "FOR_SALE" | "SOLD" | "PENDING_DROPOFF" | "RESERVED";
 
 const Dashboard = () => {
+  const meta = pageMetadata.dashboard();
   const { user } = useAuth();
   const { toast } = useToast();
   
@@ -141,6 +144,12 @@ const Dashboard = () => {
 
   return (
     <DashboardLayout>
+      <Helmet>
+        <title>{meta.title}</title>
+        <meta name="description" content={meta.description} />
+        <meta name="robots" content={meta.robots} />
+        <link rel="canonical" href={meta.canonicalUrl} />
+      </Helmet>
       <div className="p-6 md:p-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">

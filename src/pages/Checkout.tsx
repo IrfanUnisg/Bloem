@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, CreditCard, Lock, CheckCircle } from "lucide-react";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
+import { pageMetadata } from "@/lib/seo";
 
 // Initialize Stripe
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
@@ -253,8 +255,16 @@ const Checkout = () => {
     },
   };
 
+  const meta = pageMetadata.checkout();
+
   return (
     <DashboardLayout>
+      <Helmet>
+        <title>{meta.title}</title>
+        <meta name="description" content={meta.description} />
+        <meta name="robots" content={meta.robots} />
+        <link rel="canonical" href={meta.canonicalUrl} />
+      </Helmet>
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 max-w-6xl">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-foreground mb-2">Checkout</h1>

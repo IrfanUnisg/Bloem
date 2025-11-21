@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import { StoreLayout } from "@/components/layout/StoreLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,8 +14,10 @@ import { storeService } from "@/services/store.service";
 import { ItemCategory, ItemCondition } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { Upload as UploadIcon, X, Loader2, Package, ArrowLeft } from "lucide-react";
+import { pageMetadata } from "@/lib/seo";
 
 const AddStoreItem = () => {
+  const meta = pageMetadata.addStoreItem();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
@@ -172,6 +175,12 @@ const AddStoreItem = () => {
 
   return (
     <StoreLayout>
+      <Helmet>
+        <title>{meta.title}</title>
+        <meta name="description" content={meta.description} />
+        <meta name="robots" content={meta.robots} />
+        <link rel="canonical" href={meta.canonicalUrl} />
+      </Helmet>
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 max-w-3xl">
         {/* Header */}
         <div className="mb-8">

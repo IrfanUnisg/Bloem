@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Helmet } from "react-helmet-async";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,8 +9,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Search, Check, X, Clock, Store, Loader2 } from "lucide-react";
 import { adminService, StoreApplication } from "@/services/admin.service";
 import { useToast } from "@/hooks/use-toast";
+import { pageMetadata } from "@/lib/seo";
 
 const AdminStores = () => {
+  const meta = pageMetadata.adminStores();
   const { toast } = useToast();
   const [applications, setApplications] = useState<StoreApplication[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -108,6 +111,12 @@ const AdminStores = () => {
 
   return (
     <AdminLayout>
+      <Helmet>
+        <title>{meta.title}</title>
+        <meta name="description" content={meta.description} />
+        <meta name="robots" content={meta.robots} />
+        <link rel="canonical" href={meta.canonicalUrl} />
+      </Helmet>
       <div className="py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <div className="mb-8">

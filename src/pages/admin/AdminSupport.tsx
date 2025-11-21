@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Helmet } from "react-helmet-async";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,8 +10,10 @@ import { Search, MessageSquare, AlertCircle, CheckCircle, Loader2, RotateCcw } f
 import { contactService, ContactMessage } from "@/services/contact.service";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { pageMetadata } from "@/lib/seo";
 
 const AdminSupport = () => {
+  const meta = pageMetadata.adminSupport();
   const { toast } = useToast();
   const { user } = useAuth();
   const [messages, setMessages] = useState<ContactMessage[]>([]);
@@ -79,6 +82,12 @@ const AdminSupport = () => {
 
   return (
     <AdminLayout>
+      <Helmet>
+        <title>{meta.title}</title>
+        <meta name="description" content={meta.description} />
+        <meta name="robots" content={meta.robots} />
+        <link rel="canonical" href={meta.canonicalUrl} />
+      </Helmet>
       <div className="py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <div className="mb-8">
